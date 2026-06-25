@@ -802,7 +802,8 @@ function getCurrentRoute() {
   return location.hash.replace("#", "") || "home";
 }
 
-function setRoute(route) {
+function setRoute(route, options = {}) {
+  const previousScrollY = window.scrollY;
   const current = routes.includes(route) ? route : route.startsWith("case-") ? route : "home";
   document.querySelectorAll(".nav a").forEach((link) => {
     const target = link.getAttribute("href").replace("#", "");
@@ -810,7 +811,7 @@ function setRoute(route) {
   });
   document.getElementById("app").innerHTML = renderRoute(current);
   bindPage(current);
-  window.scrollTo({ top: 0, behavior: "instant" });
+  window.scrollTo({ top: options.preserveScroll ? previousScrollY : 0, behavior: "instant" });
 }
 
 function renderRoute(route) {
@@ -1505,7 +1506,7 @@ function bindDesigner() {
     chip.addEventListener("click", () => {
       designState[chip.dataset.key] = chip.dataset.value;
       if (chip.dataset.key === "wrist") designState.wristCm = getWristCenter(chip.dataset.value);
-      setRoute("designer");
+      setRoute("designer", { preserveScroll: true });
     });
   });
   const wristInput = document.getElementById("wristInput");
@@ -1558,13 +1559,13 @@ function bindDesigner() {
       });
       physicsState.beads = [];
       physicsState.mode = "loose";
-      setRoute("designer");
+      setRoute("designer", { preserveScroll: true });
     });
   }
   document.querySelectorAll(".catalog-filter").forEach((button) => {
     button.addEventListener("click", () => {
       designState.catalogCategory = button.dataset.category;
-      setRoute("designer");
+      setRoute("designer", { preserveScroll: true });
     });
   });
   document.querySelectorAll(".bead-pick").forEach((button) => {
