@@ -389,6 +389,13 @@ p {
   font-size: 13px;
 }
 
+.view-switch {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
 .studio-status {
   display: flex;
   flex-wrap: wrap;
@@ -535,6 +542,35 @@ p {
 
 #beadPhysicsCanvas:active {
   cursor: grabbing;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.three-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  min-height: 420px;
+}
+
+.three-stage canvas {
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none;
+}
+
+.three-loading,
+.three-fallback {
+  max-width: 320px;
+  padding: 14px 16px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-align: center;
 }
 
 .wrist-guide {
@@ -1103,6 +1139,236 @@ p {
   font-size: clamp(46px, 6vw, 84px);
 }
 
+.detail-page {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.back-link {
+  display: inline-flex;
+  margin-bottom: 24px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 1.05fr) minmax(320px, 0.95fr);
+  gap: clamp(28px, 5vw, 72px);
+  align-items: center;
+}
+
+.detail-visual {
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+}
+
+.detail-plate {
+  position: relative;
+  display: grid;
+  width: min(86vw, 520px);
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 28%, rgba(255,255,255,0.96), rgba(255,255,255,0.2) 40%, transparent 68%),
+    radial-gradient(circle at 50% 50%, #f4efe6, #ddd5c8 66%, rgba(185,176,160,0.24) 72%, transparent 74%);
+  box-shadow: inset 0 6px 22px rgba(255,255,255,0.72), inset 0 -16px 24px rgba(73,62,49,0.1), 0 30px 70px rgba(37,34,31,0.12);
+}
+
+.detail-plate::after {
+  content: "Stone LAB";
+  position: absolute;
+  color: rgba(37, 34, 31, 0.1);
+  font-family: Georgia, serif;
+  font-size: 32px;
+}
+
+.detail-bracelet {
+  position: absolute;
+  inset: 12%;
+  --detail-radius: min(34vw, 175px);
+}
+
+.detail-bead {
+  position: absolute;
+  left: calc(50% - 21px);
+  top: calc(50% - 21px);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  transform: rotate(calc(var(--i) * 1turn / var(--detail-count))) translateY(calc(var(--detail-radius) * -1)) rotate(calc(var(--i) * -1turn / var(--detail-count)));
+  box-shadow: inset -9px -11px 16px rgba(0,0,0,0.2), inset 5px 5px 12px rgba(255,255,255,0.36), 0 13px 18px rgba(37,34,31,0.16);
+}
+
+.play-button {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: 82px;
+  height: 82px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.26);
+  font-size: 42px;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+}
+
+.detail-three {
+  position: relative;
+  inset: auto;
+  width: min(86vw, 520px);
+  height: 360px;
+  margin-top: -28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: radial-gradient(circle at 50% 45%, rgba(255,255,255,0.82), rgba(240,235,226,0.56));
+  overflow: hidden;
+}
+
+.detail-thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: min(86vw, 520px);
+}
+
+.detail-thumbs figure {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  border-radius: 8px;
+}
+
+.detail-thumbs img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.detail-thumbs figcaption {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 8px;
+  color: var(--white);
+  background: rgba(37,34,31,0.48);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.live-note,
+.detail-caption {
+  max-width: 560px;
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.live-note {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.detail-copy h1 {
+  margin-bottom: 10px;
+  font-size: clamp(38px, 5vw, 58px);
+}
+
+.detail-meta {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.structure-list {
+  margin: 34px 0 20px;
+}
+
+.structure-list h3 {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  color: var(--muted);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.structure-list h3 span {
+  color: var(--text);
+}
+
+.structure-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 54px 90px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.mini-stone {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: inset -5px -6px 8px rgba(0,0,0,0.18), 0 5px 9px rgba(37,34,31,0.12);
+}
+
+.structure-row small,
+.structure-row em {
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.structure-row em {
+  text-align: right;
+}
+
+.detail-total {
+  display: flex;
+  justify-content: space-between;
+  margin: 24px 0 22px;
+  font-weight: 900;
+}
+
+.wrist-scale {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-top: 16px;
+  color: var(--muted);
+  border-top: 4px solid rgba(37,34,31,0.08);
+}
+
+.wrist-scale i {
+  position: absolute;
+  top: -4px;
+  left: var(--scale-left);
+  width: 70px;
+  height: 4px;
+  background: var(--green);
+  border-radius: 999px;
+}
+
+.wrist-scale strong {
+  color: var(--text);
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
 .spec-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1312,6 +1578,7 @@ textarea {
   .grid.four,
   .gallery-grid,
   .gallery-toolbar,
+  .detail-layout,
   .designer-layout,
   .studio-shell,
   .estimate-panel,
@@ -1325,6 +1592,21 @@ textarea {
 
   .case-art {
     min-height: 360px;
+  }
+
+  .detail-plate,
+  .detail-three,
+  .detail-thumbs {
+    width: 100%;
+  }
+
+  .structure-row {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .structure-row small,
+  .structure-row em {
+    text-align: left;
   }
 
   .designer-panel {
@@ -1389,6 +1671,17 @@ textarea {
 
   .studio-canvas {
     min-height: 520px;
+  }
+
+  .three-stage {
+    min-height: 360px;
+  }
+
+  .detail-bead {
+    width: 34px;
+    height: 34px;
+    left: calc(50% - 17px);
+    top: calc(50% - 17px);
   }
 
   .canvas-toolbar {
