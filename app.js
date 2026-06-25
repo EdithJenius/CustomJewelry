@@ -705,6 +705,7 @@ const designState = {
   catalogCategory: "全部",
   selectedStone: "粉水晶",
   panStyle: "雾面陶瓷盘",
+  viewMode: "物理台",
 };
 
 const palettes = {
@@ -788,6 +789,13 @@ const physicsState = {
   mode: "loose",
   dragging: null,
   lastPointer: null,
+};
+
+const threeState = {
+  renderer: null,
+  animationId: null,
+  mountedId: "",
+  cleanup: null,
 };
 
 function getCurrentRoute() {
@@ -967,8 +975,12 @@ function renderDesigner() {
             <div><strong>灵感实验室</strong><span id="selectedStoneLabel">${designState.selectedStone} · ${designState.palette}</span></div>
             <div class="studio-status"><span>真实物理碰撞</span><span id="topBeadCount">${physicsState.beads.length || recommendation.count} 颗</span><span>${designState.panStyle}</span></div>
           </div>
+          <div class="view-switch" aria-label="展示模式">
+            ${["物理台", "3D 展示"].map((mode) => `<button class="chip ${designState.viewMode === mode ? "active" : ""}" data-key="viewMode" data-value="${mode}" type="button">${mode}</button>`).join("")}
+          </div>
           <div class="designer-preview studio-canvas ${getPanClass()}" id="physicsStage">
-            <canvas id="beadPhysicsCanvas" aria-label="可拖拽的串珠物理设计圆盘"></canvas>
+            <canvas id="beadPhysicsCanvas" class="${designState.viewMode === "物理台" ? "" : "is-hidden"}" aria-label="可拖拽的串珠物理设计圆盘"></canvas>
+            <div id="bracelet3dStage" class="three-stage ${designState.viewMode === "3D 展示" ? "" : "is-hidden"}" aria-label="3D 手串展示"></div>
             <div class="wrist-guide">
               <strong>WRIST GUIDE</strong>
               <span>建议净手围：<b id="guideWrist">${recommendation.wristRange}</b></span>
@@ -1166,33 +1178,54 @@ function getTagCounts() {
 
 function renderCaseDetail(slug) {
   const item = collections.find((entry) => entry.slug === slug) || collections[0];
+  const materials = getCaseMaterials(item);
+  const total = materials.reduce((sum, material) => sum + material.price * material.count, 0);
+  const wristRange = getCaseWristRange(item);
   return `
-    <section class="section case-hero">
-      <div class="case-art image-art" style="--art-a:${item.a};--art-b:${item.b}">
-        <img src="${item.image}" alt="${item.name} 灵感参考图" />
-        <a href="${item.imageSource}" target="_blank" rel="noreferrer">${item.imageCredit}</a>
-      </div>
-      <div class="case-copy">
-        <p class="eyebrow">${item.type} · ${item.price}</p>
-        <h1>${item.name}</h1>
-        <p>${item.story}</p>
-        <div class="spec-grid">
-          <div><span>适合场景</span><strong>${item.bestFor}</strong></div>
-          <div><span>搭配材料</span><strong>${item.colors.join(" / ")}</strong></div>
-          <div><span>风格关键词</span><strong>${item.style}</strong></div>
-          <div><span>服务建议</span><strong>${item.price.includes("1,880") ? "Heirloom" : "Signature"}</strong></div>
-          <div><span>手围建议</span><strong>15-17 cm 可按需重排珠数</strong></div>
-          <div><span>案例数据</span><strong>${item.beads} beads · ${item.views.toLocaleString("zh-CN")} views · ${item.remixes} remixes</strong></div>
+    <section class="section detail-page">
+      <a class="back-link" href="#gallery">&lt; 返回灵感集录</a>
+      <div class="detail-layout">
+        <div class="detail-visual">
+          <div class="detail-plate">
+            ${renderCaseBracelet(item, materials)}
+            <button class="play-button" type="button" aria-label="播放 3D 展示">▶</button>
+          </div>
+          <div id="case3dStage" class="three-stage detail-three"></div>
+          <div class="detail-thumbs">
+            ${[item.image, item.image, item.image].map((image, index) => `
+              <figure>
+                <img src="${image}" alt="${item.name} 实拍参考 ${index + 1}" />
+                <figcaption>实拍</figcaption>
+              </figure>
+            `).join("")}
+          </div>
+          <p class="live-note">Live 实况实拍｜自然光拍摄｜无滤镜处理</p>
+          <p class="detail-caption">圆盘器皿展示、光线与镜头环境不同，实物会保留天然石色带、棉絮和晶体差异。</p>
         </div>
-        <div class="price-breakdown-card">
-          <h3>参考报价拆分</h3>
-          <div><span>主石与辅石</span><strong>约 ¥${Math.round(item.basePrice * 0.58).toLocaleString("zh-CN")}</strong></div>
-          <div><span>金属件与细节</span><strong>约 ¥${Math.round(item.basePrice * 0.22).toLocaleString("zh-CN")}</strong></div>
-          <div><span>设计、制作与包装</span><strong>约 ¥${Math.round(item.basePrice * 0.2).toLocaleString("zh-CN")}</strong></div>
-        </div>
-        <div class="actions">
-          <button class="button use-case" data-slug="${item.slug}" type="button">用这个案例咨询</button>
-          <a class="button secondary" href="#gallery">返回图库</a>
+        <div class="detail-copy">
+          <p class="eyebrow">Design detail</p>
+          <h1>${item.name}</h1>
+          <p class="detail-meta">建议手围 ${wristRange} cm&nbsp;&nbsp;|&nbsp;&nbsp;¥ ${total.toLocaleString("zh-CN")}&nbsp;&nbsp;|&nbsp;&nbsp;@ Stone LAB&nbsp;&nbsp;|&nbsp;&nbsp;2026-05-04</p>
+          <div class="structure-list">
+            <h3>构成解析 <span>Structure</span></h3>
+            ${materials.map((material) => `
+              <div class="structure-row">
+                <span class="mini-stone texture-${material.texture}" style="--bead-color:${material.color};--bead-accent:${material.accent}"></span>
+                <strong>${material.name}</strong>
+                <small>${material.size}</small>
+                <em>单价 ¥${material.price}<br>x ${material.count} | ¥${(material.price * material.count).toLocaleString("zh-CN")}</em>
+              </div>
+            `).join("")}
+          </div>
+          <div class="detail-total"><span>材料总价</span><strong>¥ ${total.toLocaleString("zh-CN")}</strong></div>
+          <div class="wrist-scale">
+            <span>13 cm</span><i style="--scale-left:52%"></i><strong>${wristRange} cm</strong><span>20 cm</span>
+          </div>
+          <button class="button apply-design" data-slug="${item.slug}" type="button">应用此设计</button>
+          <div class="detail-actions">
+            <button class="button secondary use-case" data-slug="${item.slug}" type="button">带这个方案咨询</button>
+            <a class="button ghost" href="#gallery">返回图库</a>
+          </div>
         </div>
       </div>
     </section>
@@ -1204,6 +1237,37 @@ function renderCaseDetail(slug) {
       </div>
     </section>
   `;
+}
+
+function getCaseMaterials(item) {
+  const names = item.colors.slice(0, 5);
+  const fallback = [getSelectedBead(), beadCatalog[0], beadCatalog[4]];
+  return names.map((name, index) => {
+    const cleanName = name.replace("粉晶", "粉水晶");
+    const found = beadCatalog.find((bead) => cleanName.includes(bead.name) || bead.name.includes(cleanName.replace("隔珠", ""))) || fallback[index % fallback.length];
+    return {
+      ...found,
+      name,
+      size: index === 0 ? "10mm" : "8mm",
+      count: index === 0 ? Math.max(1, Math.round(item.beads * 0.46)) : Math.max(1, Math.round(item.beads * 0.16)),
+      price: found.price + (index === 0 ? 12 : 0),
+    };
+  });
+}
+
+function getCaseWristRange(item) {
+  if (item.beads >= 24) return "16.0 - 17.0";
+  if (item.beads <= 18) return "14.5 - 15.5";
+  return "15.5 - 16.2";
+}
+
+function renderCaseBracelet(item, materials) {
+  const beads = Array.from({ length: Math.min(28, item.beads) }, (_, index) => materials[index % materials.length]);
+  return `<div class="detail-bracelet" style="--detail-count:${beads.length}">
+    ${beads.map((bead, index) => `
+      <span class="detail-bead texture-${bead.texture}" style="--i:${index};--bead-color:${bead.color};--bead-accent:${bead.accent}"></span>
+    `).join("")}
+  </div>`;
 }
 
 function renderGems() {
@@ -1382,10 +1446,58 @@ function renderMiniForm(full = false, saved = "") {
 }
 
 function bindPage(route) {
+  if (route !== "designer" && !route.startsWith("case-")) teardownThreePreview();
   if (route === "designer") bindDesigner();
   if (route === "gallery") bindGallery();
+  if (route.startsWith("case-")) bindCaseDetail(route.replace("case-", ""));
   bindCaseButtons();
   bindForms();
+}
+
+function bindCaseDetail(slug) {
+  const item = collections.find((entry) => entry.slug === slug) || collections[0];
+  initThreePreview("case3dStage", getCaseMaterials(item).flatMap((material) => Array.from({ length: material.count }, () => material)));
+  document.querySelectorAll(".apply-design").forEach((button) => {
+    button.addEventListener("click", () => {
+      applyCaseToDesigner(button.dataset.slug);
+      location.hash = "designer";
+    });
+  });
+}
+
+function applyCaseToDesigner(slug) {
+  const item = collections.find((entry) => entry.slug === slug) || collections[0];
+  const materials = getCaseMaterials(item);
+  const primary = materials[0] || getSelectedBead();
+  Object.assign(designState, {
+    purpose: item.bestFor.includes("纪念") ? "纪念日" : item.bestFor.includes("生日") ? "生日礼物" : "日常通勤",
+    selectedStone: primary.name.replace("粉晶", "粉水晶"),
+    palette: primary.palette || designState.palette,
+    beadSize: primary.size || "8mm",
+    viewMode: "3D 展示",
+  });
+  physicsState.beads = [];
+  materials.forEach((material) => {
+    Array.from({ length: Math.min(12, material.count) }).forEach(() => {
+      physicsState.beads.push({
+        id: `${material.name}-${Date.now()}-${Math.random()}`,
+        name: material.name,
+        category: material.category,
+        texture: material.texture,
+        color: material.color,
+        accent: material.accent,
+        price: material.price,
+        r: Math.max(16, Math.min(31, getBeadMm() * 2.65)),
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        tx: 0,
+        ty: 0,
+      });
+    });
+  });
+  physicsState.mode = "string";
 }
 
 function bindDesigner() {
@@ -1466,6 +1578,7 @@ function bindDesigner() {
   });
   bindPhysicsButtons();
   initPhysicsCanvas();
+  initThreePreview("bracelet3dStage", getCurrentBeadSet());
   updateSummary();
 }
 
@@ -1530,6 +1643,175 @@ function bindPhysicsButtons() {
   if (addButton) addButton.addEventListener("click", () => addPhysicsBead(getSelectedBead(), true));
 }
 
+function getCurrentBeadSet(item = null) {
+  if (physicsState.beads.length) {
+    return physicsState.beads.map((bead) => ({
+      name: bead.name,
+      category: bead.category,
+      color: bead.color,
+      accent: bead.accent,
+      texture: bead.texture,
+      price: bead.price,
+    }));
+  }
+  const selected = item || getSelectedBead();
+  const recommendation = getBeadRecommendation();
+  const samePalette = beadCatalog.filter((bead) => bead.palette === selected.palette);
+  return Array.from({ length: recommendation.count }, (_, index) => samePalette[index % samePalette.length] || selected);
+}
+
+function syncThreePreview() {
+  if (designState.viewMode !== "3D 展示") return;
+  initThreePreview("bracelet3dStage", getCurrentBeadSet());
+}
+
+async function initThreePreview(containerId, beadSet) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  teardownThreePreview();
+  threeState.mountedId = containerId;
+  if (designState.viewMode !== "3D 展示" && containerId === "bracelet3dStage") return;
+  container.innerHTML = '<div class="three-loading">加载 3D 展示...</div>';
+  try {
+    const THREE = await import("https://unpkg.com/three@0.164.1/build/three.module.js");
+    if (!document.getElementById(containerId)) return;
+    renderThreeBracelet(THREE, container, beadSet);
+  } catch {
+    container.innerHTML = '<div class="three-fallback">3D 展示加载失败，当前网络环境可能拦截了 Three.js CDN。</div>';
+  }
+}
+
+function teardownThreePreview() {
+  cancelAnimationFrame(threeState.animationId);
+  if (threeState.cleanup) threeState.cleanup();
+  threeState.renderer = null;
+  threeState.cleanup = null;
+}
+
+function renderThreeBracelet(THREE, container, beadSet) {
+  container.innerHTML = "";
+  const width = container.clientWidth || 720;
+  const height = container.clientHeight || 560;
+  const scene = new THREE.Scene();
+  scene.background = null;
+  const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
+  camera.position.set(0, 3.6, 7.4);
+  camera.lookAt(0, 0, 0);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(width, height);
+  container.appendChild(renderer.domElement);
+  threeState.renderer = renderer;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 1.45));
+  const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+  keyLight.position.set(-3, 5, 4);
+  scene.add(keyLight);
+  const rimLight = new THREE.DirectionalLight(0xcfe6ff, 1.2);
+  rimLight.position.set(4, 2, -3);
+  scene.add(rimLight);
+
+  const group = new THREE.Group();
+  scene.add(group);
+  const count = Math.max(1, beadSet.length);
+  const ringRadius = 2.35;
+  const beadRadius = Math.max(0.17, Math.min(0.32, getBeadMm() * 0.032));
+  beadSet.forEach((bead, index) => {
+    const angle = (Math.PI * 2 * index) / count - Math.PI / 2;
+    const material = createThreeBeadMaterial(THREE, bead);
+    const geometry = new THREE.SphereGeometry(bead.category === "配饰" ? beadRadius * 0.82 : beadRadius, 48, 32);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(Math.cos(angle) * ringRadius, Math.sin(angle) * 0.42, Math.sin(angle) * ringRadius * 0.72);
+    mesh.rotation.set(angle * 0.2, angle, 0);
+    group.add(mesh);
+  });
+  const cord = new THREE.Mesh(
+    new THREE.TorusGeometry(ringRadius, 0.012, 12, 160),
+    new THREE.MeshStandardMaterial({ color: 0xded6c8, roughness: 0.65, metalness: 0.05 })
+  );
+  cord.rotation.x = Math.PI / 2;
+  cord.scale.z = 0.72;
+  group.add(cord);
+
+  const plate = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.2, 3.35, 0.14, 128),
+    new THREE.MeshPhysicalMaterial({
+      color: 0xf1ede4,
+      roughness: 0.42,
+      transmission: 0.18,
+      thickness: 0.5,
+      transparent: true,
+      opacity: 0.72,
+    })
+  );
+  plate.position.y = -0.55;
+  scene.add(plate);
+
+  let dragging = false;
+  let lastX = 0;
+  renderer.domElement.addEventListener("pointerdown", (event) => {
+    dragging = true;
+    lastX = event.clientX;
+    renderer.domElement.setPointerCapture(event.pointerId);
+  });
+  renderer.domElement.addEventListener("pointermove", (event) => {
+    if (!dragging) return;
+    group.rotation.y += (event.clientX - lastX) * 0.01;
+    lastX = event.clientX;
+  });
+  renderer.domElement.addEventListener("pointerup", () => {
+    dragging = false;
+  });
+
+  const animate = () => {
+    if (!dragging) group.rotation.y += 0.006;
+    group.rotation.x = -0.78;
+    renderer.render(scene, camera);
+    threeState.animationId = requestAnimationFrame(animate);
+  };
+  animate();
+
+  const handleResize = () => {
+    if (!document.getElementById(threeState.mountedId)) return;
+    const nextWidth = container.clientWidth || width;
+    const nextHeight = container.clientHeight || height;
+    camera.aspect = nextWidth / nextHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(nextWidth, nextHeight);
+  };
+  window.addEventListener("resize", handleResize);
+  threeState.cleanup = () => {
+    window.removeEventListener("resize", handleResize);
+    renderer.dispose();
+    scene.traverse((node) => {
+      if (!node.geometry) return;
+      node.geometry.dispose();
+      if (node.material) node.material.dispose();
+    });
+  };
+}
+
+function createThreeBeadMaterial(THREE, bead) {
+  const color = new THREE.Color(bead.color);
+  const accent = new THREE.Color(bead.accent || "#ffffff");
+  const isMetal = bead.texture === "metal";
+  const isPearl = bead.texture === "pearl";
+  const isClear = ["clear", "crystal", "moon", "flash"].includes(bead.texture);
+  return new THREE.MeshPhysicalMaterial({
+    color,
+    roughness: isMetal ? 0.18 : isPearl ? 0.32 : 0.24,
+    metalness: isMetal ? 0.78 : 0.02,
+    clearcoat: 0.92,
+    clearcoatRoughness: 0.12,
+    transmission: isClear ? 0.28 : 0.02,
+    thickness: isClear ? 0.8 : 0.25,
+    iridescence: isPearl || bead.texture === "moon" ? 0.45 : 0.08,
+    sheen: isPearl ? 0.55 : 0.12,
+    emissive: accent,
+    emissiveIntensity: isClear ? 0.05 : 0.015,
+  });
+}
+
 function initPhysicsCanvas() {
   const canvas = document.getElementById("beadPhysicsCanvas");
   if (!canvas) return;
@@ -1560,7 +1842,7 @@ function resizePhysicsCanvas() {
 function seedPhysicsBeads() {
   const recommendation = getBeadRecommendation();
   const starter = [getSelectedBead(), ...beadCatalog.filter((item) => item.palette === designState.palette && item.name !== designState.selectedStone)];
-  const count = Math.min(14, recommendation.count);
+  const count = Math.min(22, recommendation.count);
   Array.from({ length: count }).forEach((_, index) => {
     addPhysicsBead(starter[index % starter.length] || beadCatalog[index % beadCatalog.length], false);
   });
@@ -1571,7 +1853,7 @@ function addPhysicsBead(item, launch = true) {
   const canvas = physicsState.canvas;
   const rect = canvas ? canvas.getBoundingClientRect() : { width: 720, height: 540 };
   const sizeMm = getBeadMm();
-  const radius = Math.max(12, Math.min(24, sizeMm * 2.15));
+  const radius = Math.max(16, Math.min(31, sizeMm * 2.65));
   const bead = {
     id: `${item.name}-${Date.now()}-${Math.random()}`,
     name: item.name,
@@ -1592,11 +1874,12 @@ function addPhysicsBead(item, launch = true) {
   if (physicsState.beads.length > 40) physicsState.beads.shift();
   physicsState.mode = "loose";
   updateSummary();
+  syncThreePreview();
 }
 
 function getPlateBounds() {
   const rect = physicsState.canvas?.getBoundingClientRect() || { width: 720, height: 540 };
-  const radius = Math.min(rect.width, rect.height) * 0.4;
+  const radius = Math.min(rect.width, rect.height) * 0.41;
   return { cx: rect.width / 2, cy: rect.height * 0.48, radius };
 }
 
@@ -1617,7 +1900,7 @@ function scatterBeadsFromString() {
 function updateStringTargets() {
   const bounds = getPlateBounds();
   const count = Math.max(1, physicsState.beads.length);
-  const ringRadius = bounds.radius * 0.78;
+  const ringRadius = bounds.radius * 0.76;
   physicsState.beads.forEach((bead, index) => {
     const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
     bead.tx = bounds.cx + Math.cos(angle) * ringRadius;
