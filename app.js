@@ -25,6 +25,9 @@ const collections = [
     beads: 22,
     designer: "Atelier 02",
     tags: ["生日", "清透", "新阶段", "低饱和"],
+    image: "./assets/gallery/moon-ritual.jpg",
+    imageCredit: "Pexels reference",
+    imageSource: "https://www.pexels.com/photo/11715922/",
     colors: ["月光石", "白水晶", "银隔珠"],
     style: "清透、轻盈、适合日常叠戴",
     bestFor: "生日、新阶段、刚入门的天然石礼物",
@@ -43,6 +46,9 @@ const collections = [
     beads: 24,
     designer: "Mia",
     tags: ["伴侣", "礼物", "温柔", "玫瑰金"],
+    image: "./assets/gallery/rose-compass.jpg",
+    imageCredit: "Pexels reference",
+    imageSource: "https://www.pexels.com/photo/11193400/",
     colors: ["粉晶", "石榴石", "玫瑰金"],
     style: "温柔、偏暖、上手有气色",
     bestFor: "伴侣、闺蜜、母亲生日",
@@ -61,6 +67,9 @@ const collections = [
     beads: 23,
     designer: "Studio Green",
     tags: ["通勤", "森绿", "中性", "低调"],
+    image: "./assets/gallery/forest-signal.jpg",
+    imageCredit: "Pexels reference",
+    imageSource: "https://www.pexels.com/photo/10835513/",
     colors: ["绿幽灵", "青金石", "银隔珠"],
     style: "克制、自然、适合中性色衣橱",
     bestFor: "通勤、长期目标、低调礼物",
@@ -79,6 +88,9 @@ const collections = [
     beads: 22,
     designer: "Jade",
     tags: ["纪念日", "暖金", "事业", "男性礼物"],
+    image: "./assets/gallery/sun-archive.jpg",
+    imageCredit: "Pexels reference",
+    imageSource: "https://www.pexels.com/photo/11215784/",
     colors: ["黄水晶", "虎眼石", "金隔珠"],
     style: "明亮、稳重、适合秋冬搭配",
     bestFor: "纪念日、事业节点、男性礼物",
@@ -97,6 +109,9 @@ const collections = [
     beads: 24,
     designer: "Atelier 01",
     tags: ["生日", "清爽", "旅行", "夏季"],
+    image: "./assets/gallery/quiet-tide.jpg",
+    imageCredit: "Pexels reference",
+    imageSource: "https://www.pexels.com/photo/12331832/",
     colors: ["海蓝宝", "拉长石", "银隔珠"],
     style: "清爽、柔和、带一点冷光泽",
     bestFor: "夏季生日、旅行、清淡衣橱",
@@ -115,6 +130,9 @@ const collections = [
     beads: 21,
     designer: "Noir",
     tags: ["能量", "自购", "浓郁", "利落"],
+    image: "./assets/gallery/ember-line.jpg",
+    imageCredit: "Pexels reference",
+    imageSource: "https://www.pexels.com/photo/10552039/",
     colors: ["红玛瑙", "黑尖晶", "金隔珠"],
     style: "浓郁、有力量、适合利落穿搭",
     bestFor: "自购、阶段目标、节日礼物",
@@ -479,7 +497,10 @@ function escapeHtml(value) {
 function renderJewelCard(item) {
   return `
     <article class="jewel-card">
-      <div class="jewel-art" style="--art-a:${item.a};--art-b:${item.b}"><div class="mini-bracelet"></div></div>
+      <div class="jewel-art image-art" style="--art-a:${item.a};--art-b:${item.b}">
+        <img src="${item.image}" alt="${item.name} 灵感参考图" loading="lazy" />
+        <a href="${item.imageSource}" target="_blank" rel="noreferrer">${item.imageCredit}</a>
+      </div>
       <div class="jewel-body">
         <p class="eyebrow">${item.type} · ${item.price}</p>
         <h3>${item.name}</h3>
@@ -524,7 +545,10 @@ function renderCaseDetail(slug) {
   const item = collections.find((entry) => entry.slug === slug) || collections[0];
   return `
     <section class="section case-hero">
-      <div class="case-art" style="--art-a:${item.a};--art-b:${item.b}"><div class="mini-bracelet large"></div></div>
+      <div class="case-art image-art" style="--art-a:${item.a};--art-b:${item.b}">
+        <img src="${item.image}" alt="${item.name} 灵感参考图" />
+        <a href="${item.imageSource}" target="_blank" rel="noreferrer">${item.imageCredit}</a>
+      </div>
       <div class="case-copy">
         <p class="eyebrow">${item.type} · ${item.price}</p>
         <h1>${item.name}</h1>

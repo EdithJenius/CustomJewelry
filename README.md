@@ -17,6 +17,7 @@ python3 -m http.server 4173
 - 颜色、排版、响应式布局：`styles.css`
 - 首屏图片：`assets/hero-bracelet.png`
 - 素材与信息清单：`CONTENT_ASSET_BRIEF.md`
+- 图库图片来源：`ASSET_SOURCES.md`
 
 ## 后续接入建议
 
