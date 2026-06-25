@@ -316,6 +316,23 @@ p {
   border-radius: 8px;
 }
 
+.step-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.step-tabs span {
+  padding: 8px 6px;
+  color: var(--green);
+  background: var(--green-soft);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
 .control-group {
   margin-bottom: 20px;
 }
@@ -392,6 +409,43 @@ p {
   line-height: 1.45;
 }
 
+.designer-insights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.designer-insights article {
+  padding: 18px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.designer-insights span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--rose-strong);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.designer-insights p {
+  margin-bottom: 0;
+}
+
+.designer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.designer-actions .button {
+  min-height: 42px;
+}
+
 .bracelet-stage {
   width: min(100%, 620px);
   aspect-ratio: 1.25;
@@ -436,6 +490,73 @@ p {
   margin: 0 auto 22px;
 }
 
+.gallery-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
+  gap: 14px;
+  max-width: 1160px;
+  margin: 0 auto 16px;
+}
+
+.search-box {
+  display: grid;
+  gap: 7px;
+}
+
+.search-box span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.search-box.compact select {
+  min-height: 46px;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 1160px;
+  margin: 0 auto 16px;
+}
+
+.tag-chip,
+.tag-row.small span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  color: var(--muted);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.tag-chip {
+  cursor: pointer;
+}
+
+.tag-chip.active {
+  color: var(--white);
+  border-color: var(--rose);
+  background: var(--rose);
+}
+
+.tag-row.small {
+  margin: 12px 0 0;
+}
+
+.gallery-meta {
+  max-width: 1160px;
+  margin: 0 auto 18px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -468,6 +589,26 @@ p {
 
 .jewel-body {
   padding: 18px;
+}
+
+.jewel-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin-top: 14px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.jewel-stats span {
+  padding: 9px;
+  color: var(--green);
+  background: var(--paper);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
 }
 
 .card-actions {
@@ -566,6 +707,33 @@ p {
 .spec-grid div {
   padding: 16px;
   background: var(--white);
+}
+
+.price-breakdown-card {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  margin: 0 0 28px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.price-breakdown-card h3 {
+  padding: 16px;
+  background: var(--white);
+}
+
+.price-breakdown-card div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--paper);
+}
+
+.price-breakdown-card span {
+  color: var(--muted);
 }
 
 .gems-table {
@@ -733,8 +901,10 @@ textarea {
   .grid.three,
   .grid.four,
   .gallery-grid,
+  .gallery-toolbar,
   .designer-layout,
   .estimate-panel,
+  .designer-insights,
   .split,
   .case-hero,
   .spec-grid,

@@ -19,6 +19,12 @@ const collections = [
     name: "Moon Ritual",
     type: "守护",
     price: "¥980 起",
+    basePrice: 980,
+    views: 2480,
+    remixes: 186,
+    beads: 22,
+    designer: "Atelier 02",
+    tags: ["生日", "清透", "新阶段", "低饱和"],
     colors: ["月光石", "白水晶", "银隔珠"],
     style: "清透、轻盈、适合日常叠戴",
     bestFor: "生日、新阶段、刚入门的天然石礼物",
@@ -31,6 +37,12 @@ const collections = [
     name: "Rose Compass",
     type: "礼物",
     price: "¥1,280 起",
+    basePrice: 1280,
+    views: 3920,
+    remixes: 341,
+    beads: 24,
+    designer: "Mia",
+    tags: ["伴侣", "礼物", "温柔", "玫瑰金"],
     colors: ["粉晶", "石榴石", "玫瑰金"],
     style: "温柔、偏暖、上手有气色",
     bestFor: "伴侣、闺蜜、母亲生日",
@@ -43,6 +55,12 @@ const collections = [
     name: "Forest Signal",
     type: "通勤",
     price: "¥1,580 起",
+    basePrice: 1580,
+    views: 2140,
+    remixes: 148,
+    beads: 23,
+    designer: "Studio Green",
+    tags: ["通勤", "森绿", "中性", "低调"],
     colors: ["绿幽灵", "青金石", "银隔珠"],
     style: "克制、自然、适合中性色衣橱",
     bestFor: "通勤、长期目标、低调礼物",
@@ -55,6 +73,12 @@ const collections = [
     name: "Sun Archive",
     type: "纪念日",
     price: "¥1,880 起",
+    basePrice: 1880,
+    views: 3012,
+    remixes: 255,
+    beads: 22,
+    designer: "Jade",
+    tags: ["纪念日", "暖金", "事业", "男性礼物"],
     colors: ["黄水晶", "虎眼石", "金隔珠"],
     style: "明亮、稳重、适合秋冬搭配",
     bestFor: "纪念日、事业节点、男性礼物",
@@ -67,6 +91,12 @@ const collections = [
     name: "Quiet Tide",
     type: "生日",
     price: "¥1,680 起",
+    basePrice: 1680,
+    views: 1768,
+    remixes: 119,
+    beads: 24,
+    designer: "Atelier 01",
+    tags: ["生日", "清爽", "旅行", "夏季"],
     colors: ["海蓝宝", "拉长石", "银隔珠"],
     style: "清爽、柔和、带一点冷光泽",
     bestFor: "夏季生日、旅行、清淡衣橱",
@@ -79,6 +109,12 @@ const collections = [
     name: "Ember Line",
     type: "能量",
     price: "¥1,480 起",
+    basePrice: 1480,
+    views: 2296,
+    remixes: 204,
+    beads: 21,
+    designer: "Noir",
+    tags: ["能量", "自购", "浓郁", "利落"],
     colors: ["红玛瑙", "黑尖晶", "金隔珠"],
     style: "浓郁、有力量、适合利落穿搭",
     bestFor: "自购、阶段目标、节日礼物",
@@ -130,6 +166,10 @@ const designState = {
   metal: "银色",
   budget: "1200-1800",
   accent: "小吊牌",
+  beadSize: "8mm",
+  fit: "舒适",
+  packaging: "礼盒",
+  timeline: "常规 5-9 天",
 };
 
 const palettes = {
@@ -145,6 +185,41 @@ const budgetBase = {
   "1200-1800": 1480,
   "2000-3500": 2680,
   "3500+": 4200,
+};
+
+const galleryState = {
+  filter: "全部",
+  query: "",
+  sort: "热门",
+  tag: "全部",
+};
+
+const materialAdvice = {
+  "柔粉": {
+    stones: "粉晶 / 石榴石 / 白水晶",
+    words: "温柔、亲近、有纪念感",
+    avoid: "不建议搭配过多冷色金属，否则礼物感会变弱。",
+  },
+  "清透": {
+    stones: "月光石 / 白水晶 / 海蓝宝",
+    words: "清爽、轻盈、新阶段",
+    avoid: "珠径不宜过大，过大会显得笨重。",
+  },
+  "森绿": {
+    stones: "绿幽灵 / 青金石 / 拉长石",
+    words: "稳定、自然、通勤友好",
+    avoid: "建议减少高亮金色，保留低调感。",
+  },
+  "暖金": {
+    stones: "黄水晶 / 虎眼石 / 茶晶",
+    words: "明亮、事业、成熟礼物",
+    avoid: "肤色偏冷的人可降低黄色占比。",
+  },
+  "浓红": {
+    stones: "红玛瑙 / 黑尖晶 / 石榴石",
+    words: "力量、明确、存在感",
+    avoid: "日常通勤可加入透明石降低浓度。",
+  },
 };
 
 function getCurrentRoute() {
@@ -286,22 +361,34 @@ function renderGalleryPreview() {
 }
 
 function renderDesigner() {
+  const advice = materialAdvice[designState.palette];
   return `
     <section class="section soft">
       <div class="section-head">
         <div><p class="eyebrow">Design studio</p><h2>在线设计器</h2></div>
-        <p>选择用途、手围、色系、金属和预算，生成一份可带到咨询页的方案摘要。</p>
+        <p>像填一张顾问需求单一样完成定制方向，实时生成搭配建议、预算拆分和可复制方案。</p>
       </div>
       <div class="designer-layout">
         <aside class="designer-panel">
+          <div class="step-tabs">
+            <span>1 场景</span><span>2 材质</span><span>3 细节</span><span>4 预算</span>
+          </div>
           ${control("purpose", "定制用途", ["生日礼物", "纪念日", "日常通勤", "能量守护", "婚礼伴手礼"])}
           ${control("wrist", "手围", ["14-15 cm", "15-16 cm", "16-17 cm", "17-18 cm"])}
           ${control("palette", "主色系", Object.keys(palettes))}
           ${control("metal", "隔珠金属", ["银色", "玫瑰金", "暖金", "无金属"])}
+          ${control("beadSize", "珠径", ["6mm", "8mm", "10mm"])}
+          ${control("fit", "佩戴松紧", ["贴手", "舒适", "宽松"])}
           ${control("accent", "细节", ["小吊牌", "刻字牌", "无吊牌", "双圈叠戴"])}
+          ${control("packaging", "包装", ["简装", "礼盒", "礼盒+手写卡"])}
+          ${control("timeline", "交付时间", ["常规 5-9 天", "加急 3-5 天", "婚礼批量"])}
           ${control("budget", "预算", ["600-1000", "1200-1800", "2000-3500", "3500+"])}
           <div class="result-box" id="designSummary"></div>
-          <button class="button" id="sendDesign" type="button">带着方案咨询</button>
+          <div class="designer-actions">
+            <button class="button" id="sendDesign" type="button">带着方案咨询</button>
+            <button class="button ghost" id="copyDesign" type="button">复制方案</button>
+            <button class="button ghost" id="resetDesign" type="button">重置</button>
+          </div>
         </aside>
         <div>
           <div class="designer-preview">
@@ -310,7 +397,24 @@ function renderDesigner() {
           <div class="estimate-panel">
             <div><span>建议主石</span><strong id="stoneAdvice"></strong></div>
             <div><span>预估价格</span><strong id="priceEstimate"></strong></div>
-            <div><span>交付周期</span><strong>5-9 个工作日</strong></div>
+            <div><span>交付周期</span><strong id="timelineAdvice">${designState.timeline}</strong></div>
+          </div>
+          <div class="designer-insights">
+            <article>
+              <span>搭配语言</span>
+              <strong>${advice.words}</strong>
+              <p>建议材料：${advice.stones}</p>
+            </article>
+            <article>
+              <span>顾问提醒</span>
+              <strong>${designState.fit}佩戴 · ${designState.beadSize}</strong>
+              <p>${advice.avoid}</p>
+            </article>
+            <article>
+              <span>预算拆分</span>
+              <strong id="priceBreakdown"></strong>
+              <p>含主石、辅石、金属件、包装与交付时间的前端估算。</p>
+            </article>
           </div>
         </div>
       </div>
@@ -329,20 +433,47 @@ function control(key, title, options) {
   `;
 }
 
-function renderGallery(filter = "全部") {
-  const items = filter === "全部" ? collections : collections.filter((item) => item.type === filter);
+function renderGallery(filter) {
+  if (filter) galleryState.filter = filter;
+  const items = getGalleryItems();
+  const tags = ["全部", ...new Set(collections.flatMap((item) => item.tags))];
+  const queryValue = escapeHtml(galleryState.query);
   return `
     <section class="section">
       <div class="section-head">
         <div><p class="eyebrow">Design gallery</p><h2>灵感图库</h2></div>
-        <p>用于承接定制珠宝转化的核心图库页面：可筛选、可看搭配、可进入咨询或案例详情。</p>
+        <p>按场景、颜色、材料和热度筛选案例。用户可以查看详情、复制方向或带着案例直接咨询。</p>
+      </div>
+      <div class="gallery-toolbar">
+        <label class="search-box">
+          <span>搜索</span>
+          <input id="gallerySearch" value="${queryValue}" placeholder="搜宝石、场景、颜色，例如 粉晶 / 通勤 / 纪念日" />
+        </label>
+        <label class="search-box compact">
+          <span>排序</span>
+          <select id="gallerySort">
+            ${["热门", "预算从低到高", "预算从高到低", "最多复制"].map((item) => `<option ${galleryState.sort === item ? "selected" : ""}>${item}</option>`).join("")}
+          </select>
+        </label>
       </div>
       <div class="filters">
-        ${["全部", ...new Set(collections.map((item) => item.type))].map((item) => `<button class="chip gallery-filter ${item === filter ? "active" : ""}" data-filter="${item}">${item}</button>`).join("")}
+        ${["全部", ...new Set(collections.map((item) => item.type))].map((item) => `<button class="chip gallery-filter ${item === galleryState.filter ? "active" : ""}" data-filter="${item}">${item}</button>`).join("")}
       </div>
-      <div class="gallery-grid">${items.map(renderJewelCard).join("")}</div>
+      <div class="tag-row">
+        ${tags.map((tag) => `<button class="tag-chip ${tag === galleryState.tag ? "active" : ""}" data-tag="${tag}" type="button">${tag}</button>`).join("")}
+      </div>
+      <div class="gallery-meta">${items.length} 个方向 · 可继续按真实案例扩展</div>
+      ${items.length ? `<div class="gallery-grid">${items.map(renderJewelCard).join("")}</div>` : `<div class="empty">没有找到匹配案例，试试减少关键词或切换标签。</div>`}
     </section>
   `;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 function renderJewelCard(item) {
@@ -354,6 +485,12 @@ function renderJewelCard(item) {
         <h3>${item.name}</h3>
         <p>${item.colors.join(" / ")}</p>
         <p>${item.style}</p>
+        <div class="jewel-stats">
+          <span>${item.views.toLocaleString("zh-CN")} views</span>
+          <span>${item.remixes} remixes</span>
+          <span>${item.beads} beads</span>
+        </div>
+        <div class="tag-row small">${item.tags.map((tag) => `<span>${tag}</span>`).join("")}</div>
         <div class="card-actions">
           <a class="button ghost" href="#case-${item.slug}">看详情</a>
           <button class="button ghost use-case" data-slug="${item.slug}" type="button">用这个方向咨询</button>
@@ -361,6 +498,26 @@ function renderJewelCard(item) {
       </div>
     </article>
   `;
+}
+
+function getGalleryItems() {
+  const query = galleryState.query.trim().toLowerCase();
+  return collections
+    .filter((item) => galleryState.filter === "全部" || item.type === galleryState.filter)
+    .filter((item) => galleryState.tag === "全部" || item.tags.includes(galleryState.tag))
+    .filter((item) => {
+      if (!query) return true;
+      return [item.name, item.type, item.style, item.bestFor, item.story, item.designer, ...item.colors, ...item.tags]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    })
+    .sort((a, b) => {
+      if (galleryState.sort === "预算从低到高") return a.basePrice - b.basePrice;
+      if (galleryState.sort === "预算从高到低") return b.basePrice - a.basePrice;
+      if (galleryState.sort === "最多复制") return b.remixes - a.remixes;
+      return b.views - a.views;
+    });
 }
 
 function renderCaseDetail(slug) {
@@ -377,6 +534,14 @@ function renderCaseDetail(slug) {
           <div><span>搭配材料</span><strong>${item.colors.join(" / ")}</strong></div>
           <div><span>风格关键词</span><strong>${item.style}</strong></div>
           <div><span>服务建议</span><strong>${item.price.includes("1,880") ? "Heirloom" : "Signature"}</strong></div>
+          <div><span>手围建议</span><strong>15-17 cm 可按需重排珠数</strong></div>
+          <div><span>案例数据</span><strong>${item.beads} beads · ${item.views.toLocaleString("zh-CN")} views · ${item.remixes} remixes</strong></div>
+        </div>
+        <div class="price-breakdown-card">
+          <h3>参考报价拆分</h3>
+          <div><span>主石与辅石</span><strong>约 ¥${Math.round(item.basePrice * 0.58).toLocaleString("zh-CN")}</strong></div>
+          <div><span>金属件与细节</span><strong>约 ¥${Math.round(item.basePrice * 0.22).toLocaleString("zh-CN")}</strong></div>
+          <div><span>设计、制作与包装</span><strong>约 ¥${Math.round(item.basePrice * 0.2).toLocaleString("zh-CN")}</strong></div>
         </div>
         <div class="actions">
           <button class="button use-case" data-slug="${item.slug}" type="button">用这个案例咨询</button>
@@ -590,6 +755,37 @@ function bindDesigner() {
       location.hash = "contact";
     });
   }
+  const copyButton = document.getElementById("copyDesign");
+  if (copyButton) {
+    copyButton.addEventListener("click", async () => {
+      const summary = getDesignSummary();
+      try {
+        await navigator.clipboard.writeText(summary);
+        copyButton.textContent = "已复制";
+      } catch {
+        localStorage.setItem("lumea-design-summary", summary);
+        copyButton.textContent = "已保存";
+      }
+    });
+  }
+  const resetButton = document.getElementById("resetDesign");
+  if (resetButton) {
+    resetButton.addEventListener("click", () => {
+      Object.assign(designState, {
+        purpose: "生日礼物",
+        wrist: "15-16 cm",
+        palette: "柔粉",
+        metal: "银色",
+        budget: "1200-1800",
+        accent: "小吊牌",
+        beadSize: "8mm",
+        fit: "舒适",
+        packaging: "礼盒",
+        timeline: "常规 5-9 天",
+      });
+      setRoute("designer");
+    });
+  }
   drawBracelet();
   updateSummary();
 }
@@ -615,21 +811,38 @@ function drawBracelet() {
 }
 
 function getDesignSummary() {
-  return `${designState.purpose} / ${designState.wrist} / ${designState.palette} / ${designState.metal} / ${designState.accent} / 预算 ${designState.budget}`;
+  return `${designState.purpose} / 手围 ${designState.wrist} / ${designState.fit}佩戴 / ${designState.palette} / ${designState.beadSize} / ${designState.metal} / ${designState.accent} / ${designState.packaging} / ${designState.timeline} / 预算 ${designState.budget} / 预估 ¥${estimatePrice().toLocaleString("zh-CN")}`;
 }
 
 function estimatePrice() {
   const base = budgetBase[designState.budget] || 1480;
   const metalAdd = designState.metal === "暖金" || designState.metal === "玫瑰金" ? 160 : 0;
   const accentAdd = designState.accent === "刻字牌" ? 220 : designState.accent === "双圈叠戴" ? 460 : 0;
-  return base + metalAdd + accentAdd;
+  const sizeAdd = designState.beadSize === "10mm" ? 260 : designState.beadSize === "6mm" ? -120 : 0;
+  const packagingAdd = designState.packaging === "礼盒+手写卡" ? 88 : designState.packaging === "简装" ? -60 : 0;
+  const timelineAdd = designState.timeline === "加急 3-5 天" ? 220 : designState.timeline === "婚礼批量" ? 520 : 0;
+  return Math.max(580, base + metalAdd + accentAdd + sizeAdd + packagingAdd + timelineAdd);
+}
+
+function getPriceParts() {
+  const total = estimatePrice();
+  const stone = Math.round(total * 0.56);
+  const detail = Math.round(total * 0.24);
+  return {
+    stone,
+    detail,
+    service: total - stone - detail,
+  };
 }
 
 function updateSummary() {
   const target = document.getElementById("designSummary");
   if (!target) return;
+  const parts = getPriceParts();
   target.textContent = getDesignSummary();
   document.getElementById("priceEstimate").textContent = `约 ¥${estimatePrice().toLocaleString("zh-CN")}`;
+  document.getElementById("timelineAdvice").textContent = designState.timeline;
+  document.getElementById("priceBreakdown").textContent = `石材 ¥${parts.stone.toLocaleString("zh-CN")} · 细节 ¥${parts.detail.toLocaleString("zh-CN")} · 服务 ¥${parts.service.toLocaleString("zh-CN")}`;
   document.getElementById("stoneAdvice").textContent = {
     "柔粉": "粉晶 / 石榴石",
     "清透": "月光石 / 白水晶",
@@ -640,9 +853,36 @@ function updateSummary() {
 }
 
 function bindGallery() {
+  const search = document.getElementById("gallerySearch");
+  if (search) {
+    search.addEventListener("input", () => {
+      galleryState.query = search.value;
+      document.getElementById("app").innerHTML = renderGallery();
+      bindGallery();
+      bindCaseButtons();
+    });
+  }
+  const sort = document.getElementById("gallerySort");
+  if (sort) {
+    sort.addEventListener("change", () => {
+      galleryState.sort = sort.value;
+      document.getElementById("app").innerHTML = renderGallery();
+      bindGallery();
+      bindCaseButtons();
+    });
+  }
   document.querySelectorAll(".gallery-filter").forEach((button) => {
     button.addEventListener("click", () => {
-      document.getElementById("app").innerHTML = renderGallery(button.dataset.filter);
+      galleryState.filter = button.dataset.filter;
+      document.getElementById("app").innerHTML = renderGallery();
+      bindGallery();
+      bindCaseButtons();
+    });
+  });
+  document.querySelectorAll(".tag-chip[data-tag]").forEach((button) => {
+    button.addEventListener("click", () => {
+      galleryState.tag = button.dataset.tag;
+      document.getElementById("app").innerHTML = renderGallery();
       bindGallery();
       bindCaseButtons();
     });
