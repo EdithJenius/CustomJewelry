@@ -700,6 +700,8 @@ const designState = {
   fit: "舒适",
   packaging: "礼盒",
   timeline: "常规 5-9 天",
+  catalogCategory: "全部",
+  selectedStone: "粉晶",
 };
 
 const palettes = {
@@ -751,6 +753,21 @@ const materialAdvice = {
     avoid: "日常通勤可加入透明石降低浓度。",
   },
 };
+
+const beadCatalog = [
+  { name: "粉晶", category: "爱情", palette: "柔粉", color: "#e7a8b4", price: 18, note: "温柔、亲近" },
+  { name: "石榴石", category: "爱情", palette: "浓红", color: "#7b2634", price: 26, note: "承诺、纪念日" },
+  { name: "月光石", category: "守护", palette: "清透", color: "#e7ece9", price: 32, note: "新阶段、柔光" },
+  { name: "白水晶", category: "守护", palette: "清透", color: "#f7f7f2", price: 12, note: "百搭、清透" },
+  { name: "海蓝宝", category: "清爽", palette: "清透", color: "#8bbccc", price: 38, note: "沟通、旅行" },
+  { name: "拉长石", category: "清爽", palette: "森绿", color: "#8e9c92", price: 24, note: "冷光、灵感" },
+  { name: "绿幽灵", category: "事业", palette: "森绿", color: "#5f886e", price: 28, note: "成长、长期目标" },
+  { name: "虎眼石", category: "事业", palette: "暖金", color: "#9b6a31", price: 20, note: "稳重、男性礼物" },
+  { name: "黄水晶", category: "明亮", palette: "暖金", color: "#d8a642", price: 22, note: "明亮、庆祝" },
+  { name: "红玛瑙", category: "能量", palette: "浓红", color: "#b3483d", price: 16, note: "行动力、节日感" },
+  { name: "黑尖晶", category: "能量", palette: "浓红", color: "#2e2b2c", price: 30, note: "利落、保护感" },
+  { name: "淡水珍珠", category: "礼盒", palette: "柔粉", color: "#f4eee4", price: 34, note: "礼物、婚礼感" },
+];
 
 function getCurrentRoute() {
   return location.hash.replace("#", "") || "home";
@@ -892,14 +909,16 @@ function renderGalleryPreview() {
 
 function renderDesigner() {
   const advice = materialAdvice[designState.palette];
+  const catalogItems = getCatalogItems();
+  const categories = ["全部", ...new Set(beadCatalog.map((item) => item.category))];
   return `
-    <section class="section soft">
+    <section class="section soft designer-section">
       <div class="section-head">
         <div><p class="eyebrow">Design studio</p><h2>在线设计器</h2></div>
-        <p>像填一张顾问需求单一样完成定制方向，实时生成搭配建议、预算拆分和可复制方案。</p>
+        <p>像做一款 DIY 小游戏一样选珠、调色、看预算。左侧定方向，中间实时预览，底部挑珠，右侧生成咨询单。</p>
       </div>
-      <div class="designer-layout">
-        <aside class="designer-panel">
+      <div class="studio-shell">
+        <aside class="studio-sidebar">
           <div class="step-tabs">
             <span>1 场景</span><span>2 材质</span><span>3 细节</span><span>4 预算</span>
           </div>
@@ -909,21 +928,48 @@ function renderDesigner() {
           ${control("metal", "隔珠金属", ["银色", "玫瑰金", "暖金", "无金属"])}
           ${control("beadSize", "珠径", ["6mm", "8mm", "10mm"])}
           ${control("fit", "佩戴松紧", ["贴手", "舒适", "宽松"])}
-          ${control("accent", "细节", ["小吊牌", "刻字牌", "无吊牌", "双圈叠戴"])}
-          ${control("packaging", "包装", ["简装", "礼盒", "礼盒+手写卡"])}
-          ${control("timeline", "交付时间", ["常规 5-9 天", "加急 3-5 天", "婚礼批量"])}
-          ${control("budget", "预算", ["600-1000", "1200-1800", "2000-3500", "3500+"])}
-          <div class="result-box" id="designSummary"></div>
-          <div class="designer-actions">
-            <button class="button" id="sendDesign" type="button">带着方案咨询</button>
-            <button class="button ghost" id="copyDesign" type="button">复制方案</button>
-            <button class="button ghost" id="resetDesign" type="button">重置</button>
-          </div>
         </aside>
-        <div>
-          <div class="designer-preview">
-            <div class="bracelet-stage"><div class="bead-ring" id="beadRing"></div></div>
+
+        <section class="studio-canvas-wrap">
+          <div class="studio-topbar">
+            <div><strong>灵感实验室</strong><span>${designState.selectedStone} · ${designState.palette}</span></div>
+            <div class="studio-status"><span>真实材质预览</span><span>24 beads</span><span>${designState.fit}</span></div>
           </div>
+          <div class="designer-preview studio-canvas">
+            <div class="loose-stones" aria-hidden="true">
+              ${catalogItems.slice(0, 8).map((item, index) => `<span style="--loose-x:${10 + (index % 4) * 21}%;--loose-y:${15 + Math.floor(index / 4) * 20}%;--loose-color:${item.color}"></span>`).join("")}
+            </div>
+            <div class="bracelet-stage"><div class="bead-ring" id="beadRing"></div></div>
+            <div class="canvas-toolbar" aria-label="画布工具">
+              <button type="button" title="撤销">↶</button>
+              <button type="button" title="镜像">◇</button>
+              <button type="button" title="锁定">⌘</button>
+              <button type="button" id="resetDesign" title="重置">↺</button>
+            </div>
+            <button class="ai-chip" type="button">AI 搭配建议</button>
+          </div>
+          <div class="bead-catalog">
+            <div class="catalog-head">
+              <div><strong>珠子素材库</strong><span>点击珠子即可替换主色和推荐材料</span></div>
+              <div class="catalog-filters">
+                ${categories.map((item) => `<button class="tag-chip catalog-filter ${item === designState.catalogCategory ? "active" : ""}" data-category="${item}" type="button">${item}</button>`).join("")}
+              </div>
+            </div>
+            <div class="bead-grid">
+              ${catalogItems.map((item) => `
+                <button class="bead-pick ${item.name === designState.selectedStone ? "active" : ""}" type="button" data-stone="${item.name}" data-palette="${item.palette}">
+                  <span class="bead-thumb" style="--bead-color:${item.color}"></span>
+                  <strong>${item.name}</strong>
+                  <small>${item.note} · ¥${item.price}/颗</small>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        </section>
+
+        <aside class="studio-summary">
+          <p class="eyebrow">Order brief</p>
+          <h3>方案摘要</h3>
           <div class="estimate-panel">
             <div><span>建议主石</span><strong id="stoneAdvice"></strong></div>
             <div><span>预估价格</span><strong id="priceEstimate"></strong></div>
@@ -946,7 +992,16 @@ function renderDesigner() {
               <p>含主石、辅石、金属件、包装与交付时间的前端估算。</p>
             </article>
           </div>
-        </div>
+          ${control("accent", "细节", ["小吊牌", "刻字牌", "无吊牌", "双圈叠戴"])}
+          ${control("packaging", "包装", ["简装", "礼盒", "礼盒+手写卡"])}
+          ${control("timeline", "交付时间", ["常规 5-9 天", "加急 3-5 天", "婚礼批量"])}
+          ${control("budget", "预算", ["600-1000", "1200-1800", "2000-3500", "3500+"])}
+          <div class="result-box" id="designSummary"></div>
+          <div class="designer-actions">
+            <button class="button" id="sendDesign" type="button">带着方案咨询</button>
+            <button class="button ghost" id="copyDesign" type="button">复制方案</button>
+          </div>
+        </aside>
       </div>
     </section>
   `;
@@ -1337,12 +1392,32 @@ function bindDesigner() {
         fit: "舒适",
         packaging: "礼盒",
         timeline: "常规 5-9 天",
+        catalogCategory: "全部",
+        selectedStone: "粉晶",
       });
       setRoute("designer");
     });
   }
+  document.querySelectorAll(".catalog-filter").forEach((button) => {
+    button.addEventListener("click", () => {
+      designState.catalogCategory = button.dataset.category;
+      setRoute("designer");
+    });
+  });
+  document.querySelectorAll(".bead-pick").forEach((button) => {
+    button.addEventListener("click", () => {
+      designState.selectedStone = button.dataset.stone;
+      designState.palette = button.dataset.palette;
+      setRoute("designer");
+    });
+  });
   drawBracelet();
   updateSummary();
+}
+
+function getCatalogItems() {
+  if (designState.catalogCategory === "全部") return beadCatalog;
+  return beadCatalog.filter((item) => item.category === designState.catalogCategory);
 }
 
 function drawBracelet() {
@@ -1366,7 +1441,7 @@ function drawBracelet() {
 }
 
 function getDesignSummary() {
-  return `${designState.purpose} / 手围 ${designState.wrist} / ${designState.fit}佩戴 / ${designState.palette} / ${designState.beadSize} / ${designState.metal} / ${designState.accent} / ${designState.packaging} / ${designState.timeline} / 预算 ${designState.budget} / 预估 ¥${estimatePrice().toLocaleString("zh-CN")}`;
+  return `${designState.purpose} / 主石 ${designState.selectedStone} / 手围 ${designState.wrist} / ${designState.fit}佩戴 / ${designState.palette} / ${designState.beadSize} / ${designState.metal} / ${designState.accent} / ${designState.packaging} / ${designState.timeline} / 预算 ${designState.budget} / 预估 ¥${estimatePrice().toLocaleString("zh-CN")}`;
 }
 
 function estimatePrice() {
@@ -1398,13 +1473,14 @@ function updateSummary() {
   document.getElementById("priceEstimate").textContent = `约 ¥${estimatePrice().toLocaleString("zh-CN")}`;
   document.getElementById("timelineAdvice").textContent = designState.timeline;
   document.getElementById("priceBreakdown").textContent = `石材 ¥${parts.stone.toLocaleString("zh-CN")} · 细节 ¥${parts.detail.toLocaleString("zh-CN")} · 服务 ¥${parts.service.toLocaleString("zh-CN")}`;
-  document.getElementById("stoneAdvice").textContent = {
+  const paletteAdvice = {
     "柔粉": "粉晶 / 石榴石",
     "清透": "月光石 / 白水晶",
     "森绿": "绿幽灵 / 青金石",
     "暖金": "黄水晶 / 虎眼石",
     "浓红": "红玛瑙 / 黑尖晶",
-  }[designState.palette];
+  }[designState.palette].split(" / ").filter((item) => item !== designState.selectedStone);
+  document.getElementById("stoneAdvice").textContent = [designState.selectedStone, ...paletteAdvice].join(" / ");
 }
 
 function bindGallery() {
