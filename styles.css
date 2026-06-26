@@ -455,6 +455,36 @@ p {
   grid-template-columns: 1fr 1fr;
 }
 
+.sample-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.sample-card {
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  cursor: pointer;
+  text-align: left;
+}
+
+.sample-card strong {
+  color: var(--text);
+}
+
+.sample-card span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.blank-sample {
+  border-color: rgba(72, 117, 103, 0.35);
+  background: var(--green-soft);
+}
+
 .chip {
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -554,6 +584,7 @@ p {
   display: grid;
   place-items: center;
   min-height: 420px;
+  background: #fffdf8;
 }
 
 .three-stage canvas {
@@ -1003,7 +1034,8 @@ p {
   pointer-events: none;
 }
 
-.image-art a {
+.image-art a,
+.image-credit {
   position: absolute;
   right: 12px;
   bottom: 12px;
