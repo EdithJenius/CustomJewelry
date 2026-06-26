@@ -839,6 +839,7 @@ function getCurrentRoute() {
 
 function setRoute(route, options = {}) {
   const previousScrollY = window.scrollY;
+  const designerScroll = options.preserveScroll ? getDesignerScrollState() : null;
   const current = routes.includes(route) ? route : route.startsWith("case-") ? route : "home";
   document.querySelectorAll(".nav a").forEach((link) => {
     const target = link.getAttribute("href").replace("#", "");
@@ -847,6 +848,25 @@ function setRoute(route, options = {}) {
   document.getElementById("app").innerHTML = renderRoute(current);
   bindPage(current);
   window.scrollTo({ top: options.preserveScroll ? previousScrollY : 0, behavior: "instant" });
+  if (designerScroll) restoreDesignerScrollState(designerScroll, previousScrollY);
+}
+
+function getDesignerScrollState() {
+  return [".studio-sidebar", ".studio-canvas-wrap", ".studio-summary"].reduce((state, selector) => {
+    const element = document.querySelector(selector);
+    state[selector] = element ? element.scrollTop : 0;
+    return state;
+  }, {});
+}
+
+function restoreDesignerScrollState(state, windowY) {
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: windowY, behavior: "instant" });
+    Object.entries(state).forEach(([selector, scrollTop]) => {
+      const element = document.querySelector(selector);
+      if (element) element.scrollTop = scrollTop;
+    });
+  });
 }
 
 function renderRoute(route) {
@@ -996,8 +1016,22 @@ function renderDesigner() {
           <div class="control-group">
             <label>样例方案</label>
             <div class="sample-grid">
-              <button class="sample-card blank-sample" data-blank="true" type="button"><strong>完全 DIY</strong><span>空盘开始，自由选珠</span></button>
-              ${designerSamples.map((sample) => `<button class="sample-card apply-sample" data-slug="${sample.slug}" type="button"><strong>${sample.label}</strong><span>${sample.hint}</span></button>`).join("")}
+              <div class="sample-card">
+                <strong>完全 DIY</strong><span>空盘开始，自由选珠</span>
+                <div class="sample-actions">
+                  <button class="blank-sample" data-view="物理台" type="button">物理台</button>
+                  <button class="blank-sample" data-view="3D 展示" type="button">3D</button>
+                </div>
+              </div>
+              ${designerSamples.map((sample) => `
+                <div class="sample-card">
+                  <strong>${sample.label}</strong><span>${sample.hint}</span>
+                  <div class="sample-actions">
+                    <button class="apply-sample" data-slug="${sample.slug}" data-view="物理台" type="button">物理台</button>
+                    <button class="apply-sample" data-slug="${sample.slug}" data-view="3D 展示" type="button">3D</button>
+                  </div>
+                </div>
+              `).join("")}
             </div>
           </div>
           <div class="control-group">
@@ -1030,18 +1064,19 @@ function renderDesigner() {
               <span>建议净手围：<b id="guideWrist">${recommendation.wristRange}</b></span>
             </div>
             <div class="canvas-toolbar" aria-label="画布工具">
-              <button type="button" id="collectBeads" title="收拢成串">⟳</button>
-              <button type="button" id="scatterBeads" title="解除串珠">⌁</button>
+              ${designState.viewMode === "物理台" ? '<button type="button" id="collectBeads" title="收拢成串">⟳</button><button type="button" id="scatterBeads" title="解除串珠">⌁</button>' : ""}
               <button type="button" id="addSelectedBead" title="添加当前珠子">＋</button>
               <button type="button" id="resetDesign" title="重置">↺</button>
             </div>
             <button class="ai-chip" type="button">AI 搭配建议</button>
           </div>
-          <div class="physics-actions">
-            <button class="button" id="collectBeadsBottom" type="button">收拢成串</button>
-            <button class="button secondary" id="scatterBeadsBottom" type="button">解除串珠</button>
-            <span>点击下方珠子会从底部弹射入盘；拖拽珠子可更换位置，碰撞会实时响应。</span>
-          </div>
+          ${designState.viewMode === "物理台" ? `
+            <div class="physics-actions">
+              <button class="button" id="collectBeadsBottom" type="button">收拢成串</button>
+              <button class="button secondary" id="scatterBeadsBottom" type="button">解除串珠</button>
+              <span>点击下方珠子会从底部弹射入盘；拖拽珠子可更换位置，碰撞会实时响应。</span>
+            </div>
+          ` : ""}
           <div class="bead-catalog">
             <div class="catalog-head">
               <div><strong>珠子素材库</strong><span>写实渲染：水晶通透、天然石纹理、金属反光、古珠旧化。点击即可发射到圆盘。</span></div>
@@ -1643,6 +1678,7 @@ function bindDesigner() {
   document.querySelectorAll(".apply-sample").forEach((button) => {
     button.addEventListener("click", () => {
       applyCaseToDesigner(button.dataset.slug);
+      designState.viewMode = button.dataset.view || designState.viewMode;
       setRoute("designer", { preserveScroll: true });
     });
   });
@@ -1650,7 +1686,7 @@ function bindDesigner() {
     button.addEventListener("click", () => {
       physicsState.beads = [];
       physicsState.mode = "loose";
-      designState.viewMode = "物理台";
+      designState.viewMode = button.dataset.view || "物理台";
       setRoute("designer", { preserveScroll: true });
     });
   });
@@ -1797,7 +1833,7 @@ function renderThreeBracelet(THREE, container, beadSet) {
   if (beadPositions.length > 1) {
     const curve = new THREE.CatmullRomCurve3(beadPositions.map((item) => item.position), true, "centripetal", 0.55);
     const cord = new THREE.Mesh(
-      new THREE.TubeGeometry(curve, 180, getCordThicknessPx() * 0.0032, 10, true),
+      new THREE.TubeGeometry(curve, 180, getCordThicknessPx() * 0.0022, 10, true),
       new THREE.MeshStandardMaterial({ color: getCordHex(), roughness: 0.78, metalness: 0.02 })
     );
     cord.renderOrder = 0;
@@ -1873,11 +1909,11 @@ function renderThreeBracelet(THREE, container, beadSet) {
 function getThreeStringLayout(THREE, beadSet, beadRadius) {
   if (!beadSet.length) return [];
   const radii = beadSet.map((bead) => (bead.category === "配饰" ? beadRadius * 0.82 : beadRadius));
-  const circumference = radii.reduce((sum, radius, index) => sum + (radius + radii[(index + 1) % radii.length]) * 1.96, 0);
-  const ringRadius = Math.max(1.38, Math.min(2.35, circumference / (Math.PI * 2)));
+  const circumference = radii.reduce((sum, radius, index) => sum + (radius + radii[(index + 1) % radii.length]) * 0.98, 0);
+  const ringRadius = Math.max(0.82, Math.min(2.35, circumference / (Math.PI * 2)));
   let cursor = -Math.PI / 2;
   return beadSet.map((bead, index) => {
-    if (index > 0) cursor += ((radii[index - 1] + radii[index]) * 1.96) / ringRadius;
+    if (index > 0) cursor += ((radii[index - 1] + radii[index]) * 0.98) / ringRadius;
     const angle = cursor;
     return {
       angle,
@@ -2141,26 +2177,66 @@ function drawPhysics() {
 }
 
 function drawPlate(ctx, bounds) {
-  const gradient = ctx.createRadialGradient(bounds.cx - bounds.radius * 0.28, bounds.cy - bounds.radius * 0.35, bounds.radius * 0.1, bounds.cx, bounds.cy, bounds.radius);
-  gradient.addColorStop(0, "rgba(255,255,255,0.96)");
-  gradient.addColorStop(0.58, "rgba(246,241,232,0.78)");
-  gradient.addColorStop(1, "rgba(213,205,190,0.26)");
+  const palette = getPlatePalette();
+  const gradient = ctx.createRadialGradient(bounds.cx - bounds.radius * 0.3, bounds.cy - bounds.radius * 0.36, bounds.radius * 0.1, bounds.cx, bounds.cy, bounds.radius);
+  gradient.addColorStop(0, palette.hotspot);
+  gradient.addColorStop(0.5, palette.face);
+  gradient.addColorStop(0.82, palette.edge);
+  gradient.addColorStop(1, palette.rim);
   ctx.save();
+  ctx.shadowColor = "rgba(37,34,31,0.16)";
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 18;
   ctx.beginPath();
   ctx.arc(bounds.cx, bounds.cy, bounds.radius, 0, Math.PI * 2);
   ctx.fillStyle = gradient;
   ctx.fill();
+  ctx.shadowColor = "transparent";
   ctx.lineWidth = 8;
-  ctx.strokeStyle = "rgba(255,255,255,0.72)";
+  ctx.strokeStyle = "rgba(255,255,255,0.82)";
   ctx.stroke();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "rgba(122,112,98,0.18)";
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = palette.stroke;
   ctx.stroke();
   ctx.beginPath();
   ctx.arc(bounds.cx, bounds.cy, bounds.radius * 0.72, 0, Math.PI * 2);
-  ctx.strokeStyle = "rgba(255,255,255,0.46)";
+  ctx.strokeStyle = "rgba(255,255,255,0.64)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(bounds.cx, bounds.cy, bounds.radius * 0.94, Math.PI * 0.08, Math.PI * 1.08);
+  ctx.strokeStyle = "rgba(255,255,255,0.74)";
+  ctx.lineWidth = 5;
   ctx.stroke();
   ctx.restore();
+}
+
+function getPlatePalette() {
+  if (designState.panStyle === "半透明亚克力") {
+    return {
+      hotspot: "rgba(255,255,255,0.9)",
+      face: "rgba(235,246,247,0.48)",
+      edge: "rgba(203,224,226,0.38)",
+      rim: "rgba(179,202,204,0.22)",
+      stroke: "rgba(125,151,154,0.18)",
+    };
+  }
+  if (designState.panStyle === "胡桃木托盘") {
+    return {
+      hotspot: "rgba(255,246,232,0.72)",
+      face: "rgba(198,145,94,0.28)",
+      edge: "rgba(137,91,54,0.28)",
+      rim: "rgba(96,61,38,0.18)",
+      stroke: "rgba(93,62,40,0.22)",
+    };
+  }
+  return {
+    hotspot: "rgba(255,255,255,0.98)",
+    face: "rgba(249,246,239,0.9)",
+    edge: "rgba(231,225,215,0.58)",
+    rim: "rgba(206,198,184,0.32)",
+    stroke: "rgba(122,112,98,0.18)",
+  };
 }
 
 function getCordHex() {
@@ -2183,6 +2259,7 @@ function getCordCss() {
 
 function drawCordAndAccessory(ctx, bounds) {
   if (!physicsState.beads.length || (!physicsState.mode.startsWith("string") && physicsState.mode !== "cutting")) return;
+  if (physicsState.dragging && physicsState.mode.startsWith("string")) return;
   ctx.save();
   const points = getCordPathPoints(bounds);
   if (points.length < 2) {
