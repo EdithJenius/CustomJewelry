@@ -15,6 +15,27 @@ const routes = [
 
 const collections = [
   {
+    slug: "spring-banquet-knot",
+    name: "春日宴",
+    type: "手绳",
+    price: "¥423 起",
+    basePrice: 423,
+    views: 4280,
+    remixes: 412,
+    beads: 19,
+    designer: "Stone LAB",
+    tags: ["绳结", "珍珠", "墨绿", "新中式"],
+    image: "./assets/gallery-real/woven-knot-green.jpg",
+    imageCredit: "User supplied reference",
+    imageSource: "用户提供图片素材",
+    colors: ["淡水珍珠", "墨绿手绳", "镀金吊牌"],
+    style: "新中式、绳结编织、珍珠半串",
+    bestFor: "节日礼物、春夏佩戴、新中式穿搭",
+    story: "用半串珍珠和墨绿编绳形成留白，金色福牌作为视觉重心，适合想要东方感但不厚重的手绳方向。",
+    a: "#f4f0df",
+    b: "#1d3b34",
+  },
+  {
     slug: "moon-ritual",
     name: "Moon Ritual",
     type: "守护",
@@ -697,6 +718,9 @@ const designState = {
   metal: "银色",
   budget: "1200-1800",
   accent: "小吊牌",
+  accessory: "无配件",
+  knotStyle: "无绳结",
+  cordColor: "墨绿",
   beadSize: "8mm",
   beadShape: "圆珠",
   fit: "舒适",
@@ -707,6 +731,13 @@ const designState = {
   panStyle: "雾面陶瓷盘",
   viewMode: "物理台",
 };
+
+const designerSamples = [
+  { slug: "spring-banquet-knot", label: "春日宴绳结", hint: "珍珠 + 墨绿编绳 + 金牌" },
+  { slug: "moon-ritual", label: "蓝白月光", hint: "月光石 + 白水晶" },
+  { slug: "rose-compass", label: "粉晶礼物", hint: "粉水晶 + 石榴石" },
+  { slug: "forest-signal", label: "森绿通勤", hint: "绿幽灵 + 银隔珠" },
+];
 
 const palettes = {
   "柔粉": ["#f1c7cf", "#f8eff0", "#b65361", "#f7dedf", "#d7969e", "#ffffff"],
@@ -942,6 +973,7 @@ function renderDesigner() {
   const catalogItems = getCatalogItems();
   const categories = ["全部", ...new Set(beadCatalog.map((item) => item.category))];
   const recommendation = getBeadRecommendation();
+  const currentCount = physicsState.beads.length;
   return `
     <section class="section soft designer-section">
       <div class="section-head">
@@ -956,6 +988,13 @@ function renderDesigner() {
           </div>
           <div class="step-tabs vertical">
             <span>1 选择材质</span><span>2 点击入盘</span><span>3 拖拽调序</span><span>4 保存方案</span>
+          </div>
+          <div class="control-group">
+            <label>样例方案</label>
+            <div class="sample-grid">
+              <button class="sample-card blank-sample" data-blank="true" type="button"><strong>完全 DIY</strong><span>空盘开始，自由选珠</span></button>
+              ${designerSamples.map((sample) => `<button class="sample-card apply-sample" data-slug="${sample.slug}" type="button"><strong>${sample.label}</strong><span>${sample.hint}</span></button>`).join("")}
+            </div>
           </div>
           <div class="control-group">
             <label>珠子材质分类</label>
@@ -974,7 +1013,7 @@ function renderDesigner() {
         <section class="studio-canvas-wrap">
           <div class="studio-topbar">
             <div><strong>灵感实验室</strong><span id="selectedStoneLabel">${designState.selectedStone} · ${designState.palette}</span></div>
-            <div class="studio-status"><span>真实物理碰撞</span><span id="topBeadCount">${physicsState.beads.length || recommendation.count} 颗</span><span>${designState.panStyle}</span></div>
+            <div class="studio-status"><span>真实物理碰撞</span><span id="topBeadCount">${currentCount} 颗</span><span>${designState.panStyle}</span></div>
           </div>
           <div class="view-switch" aria-label="展示模式">
             ${["物理台", "3D 展示"].map((mode) => `<button class="chip ${designState.viewMode === mode ? "active" : ""}" data-key="viewMode" data-value="${mode}" type="button">${mode}</button>`).join("")}
@@ -1019,12 +1058,15 @@ function renderDesigner() {
           <p class="eyebrow">Order brief</p>
           <h3><span id="orderPrice">¥${estimatePrice().toLocaleString("zh-CN")}</span></h3>
           <div class="estimate-panel">
-            <div><span>珠子数量</span><strong id="beadCountText">${physicsState.beads.length || recommendation.count} / 40</strong></div>
+            <div><span>珠子数量</span><strong id="beadCountText">${currentCount} / 40</strong></div>
             <div><span>预估周长</span><strong id="braceletLength">${recommendation.lengthCm} cm</strong></div>
             <div><span>建议手围</span><strong id="suggestedWrist">${recommendation.wristRange}</strong></div>
           </div>
           <label class="field compact-field"><span>设置净手围（cm）</span><input id="wristInput" type="number" min="12" max="22" step="0.1" value="${designState.wristCm}" /></label>
           ${control("fit", "佩戴松紧", ["贴手", "舒适", "宽松"])}
+          ${control("knotStyle", "绳结结构", ["无绳结", "双向平结", "蛇结收尾", "金刚结调节"])}
+          ${control("cordColor", "编绳颜色", ["墨绿", "春辰", "四绿", "碧滋", "无心"])}
+          ${control("accessory", "成串后配件", ["无配件", "金福牌", "小金铃", "银莲蓬", "平安扣"])}
           <div class="designer-insights">
             <article>
               <span>推荐珠径和数量</span>
@@ -1118,7 +1160,7 @@ function renderJewelCard(item) {
     <article class="jewel-card">
       <div class="jewel-art image-art" style="--art-a:${item.a};--art-b:${item.b}">
         <img src="${item.image}" alt="${item.name} 灵感参考图" loading="lazy" />
-        <a href="${item.imageSource}" target="_blank" rel="noreferrer">${item.imageCredit}</a>
+        ${renderImageCredit(item)}
       </div>
       <div class="jewel-body">
         <p class="eyebrow">${item.type} · ${item.price}</p>
@@ -1138,6 +1180,13 @@ function renderJewelCard(item) {
       </div>
     </article>
   `;
+}
+
+function renderImageCredit(item) {
+  if (String(item.imageSource || "").startsWith("http")) {
+    return `<a href="${item.imageSource}" target="_blank" rel="noreferrer">${item.imageCredit}</a>`;
+  }
+  return `<span class="image-credit">${item.imageCredit}</span>`;
 }
 
 function getGalleryItems() {
@@ -1475,6 +1524,9 @@ function applyCaseToDesigner(slug) {
     selectedStone: primary.name.replace("粉晶", "粉水晶"),
     palette: primary.palette || designState.palette,
     beadSize: primary.size || "8mm",
+    knotStyle: item.slug === "spring-banquet-knot" ? "双向平结" : designState.knotStyle,
+    cordColor: item.slug === "spring-banquet-knot" ? "墨绿" : designState.cordColor,
+    accessory: item.slug === "spring-banquet-knot" ? "金福牌" : designState.accessory,
     viewMode: "3D 展示",
   });
   physicsState.beads = [];
@@ -1498,7 +1550,7 @@ function applyCaseToDesigner(slug) {
       });
     });
   });
-  physicsState.mode = "string";
+  physicsState.mode = "stringLocked";
 }
 
 function bindDesigner() {
@@ -1548,6 +1600,9 @@ function bindDesigner() {
         metal: "银色",
         budget: "1200-1800",
         accent: "小吊牌",
+        accessory: "无配件",
+        knotStyle: "无绳结",
+        cordColor: "墨绿",
         beadSize: "8mm",
         beadShape: "圆珠",
         fit: "舒适",
@@ -1575,6 +1630,20 @@ function bindDesigner() {
       document.querySelectorAll(".bead-pick").forEach((item) => item.classList.toggle("active", item === button));
       addPhysicsBead(getSelectedBead(), true);
       updateSummary();
+    });
+  });
+  document.querySelectorAll(".apply-sample").forEach((button) => {
+    button.addEventListener("click", () => {
+      applyCaseToDesigner(button.dataset.slug);
+      setRoute("designer", { preserveScroll: true });
+    });
+  });
+  document.querySelectorAll(".blank-sample").forEach((button) => {
+    button.addEventListener("click", () => {
+      physicsState.beads = [];
+      physicsState.mode = "loose";
+      designState.viewMode = "物理台";
+      setRoute("designer", { preserveScroll: true });
     });
   });
   bindPhysicsButtons();
@@ -1728,25 +1797,21 @@ function renderThreeBracelet(THREE, container, beadSet) {
   });
   const cord = new THREE.Mesh(
     new THREE.TorusGeometry(ringRadius, 0.012, 12, 160),
-    new THREE.MeshStandardMaterial({ color: 0xded6c8, roughness: 0.65, metalness: 0.05 })
+    new THREE.MeshStandardMaterial({ color: getCordHex(), roughness: 0.72, metalness: 0.03 })
   );
   cord.rotation.x = Math.PI / 2;
   cord.scale.z = 0.72;
   group.add(cord);
 
-  const plate = new THREE.Mesh(
-    new THREE.CylinderGeometry(3.2, 3.35, 0.14, 128),
-    new THREE.MeshPhysicalMaterial({
-      color: 0xf1ede4,
-      roughness: 0.42,
-      transmission: 0.18,
-      thickness: 0.5,
-      transparent: true,
-      opacity: 0.72,
-    })
-  );
-  plate.position.y = -0.55;
-  scene.add(plate);
+  if (designState.accessory !== "无配件") {
+    const charm = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.18, 0.05, 40),
+      new THREE.MeshStandardMaterial({ color: 0xd6a33e, roughness: 0.24, metalness: 0.72 })
+    );
+    charm.position.set(0, -0.86, ringRadius * 0.68);
+    charm.rotation.x = Math.PI / 2;
+    group.add(charm);
+  }
 
   let dragging = false;
   let lastX = 0;
@@ -1820,7 +1885,6 @@ function initPhysicsCanvas() {
   physicsState.canvas = canvas;
   physicsState.ctx = canvas.getContext("2d");
   resizePhysicsCanvas();
-  if (!physicsState.beads.length) seedPhysicsBeads();
   canvas.onpointerdown = handleCanvasPointerDown;
   canvas.onpointermove = handleCanvasPointerMove;
   canvas.onpointerup = handleCanvasPointerUp;
@@ -1885,8 +1949,16 @@ function getPlateBounds() {
 }
 
 function collectBeadsIntoString() {
-  physicsState.mode = "string";
+  physicsState.mode = "stringLocked";
   updateStringTargets();
+  physicsState.beads.forEach((bead) => {
+    bead.x = bead.tx;
+    bead.y = bead.ty;
+    bead.vx = 0;
+    bead.vy = 0;
+  });
+  updateSummary();
+  syncThreePreview();
 }
 
 function scatterBeadsFromString() {
@@ -1919,6 +1991,13 @@ function simulatePhysics() {
   const bounds = getPlateBounds();
   physicsState.beads.forEach((bead) => {
     if (physicsState.dragging === bead) return;
+    if (physicsState.mode === "stringLocked") {
+      bead.x = bead.tx;
+      bead.y = bead.ty;
+      bead.vx = 0;
+      bead.vy = 0;
+      return;
+    }
     if (physicsState.mode === "string") {
       bead.vx += (bead.tx - bead.x) * 0.018;
       bead.vy += (bead.ty - bead.y) * 0.018;
@@ -1991,6 +2070,7 @@ function drawPhysics() {
   const bounds = getPlateBounds();
   ctx.clearRect(0, 0, rect.width, rect.height);
   drawPlate(ctx, bounds);
+  drawCordAndAccessory(ctx, bounds);
   physicsState.beads.forEach((bead) => drawRealisticBead(ctx, bead));
 }
 
@@ -2014,6 +2094,71 @@ function drawPlate(ctx, bounds) {
   ctx.arc(bounds.cx, bounds.cy, bounds.radius * 0.72, 0, Math.PI * 2);
   ctx.strokeStyle = "rgba(255,255,255,0.46)";
   ctx.stroke();
+  ctx.restore();
+}
+
+function getCordHex() {
+  return {
+    "墨绿": 0x202e2b,
+    "春辰": 0x8c9b61,
+    "四绿": 0xbad6d2,
+    "碧滋": 0xb4bbad,
+    "无心": 0x9f9b91,
+  }[designState.cordColor] || 0x202e2b;
+}
+
+function getCordCss() {
+  return `#${getCordHex().toString(16).padStart(6, "0")}`;
+}
+
+function drawCordAndAccessory(ctx, bounds) {
+  if (!physicsState.beads.length || !physicsState.mode.startsWith("string")) return;
+  ctx.save();
+  const ringRadius = bounds.radius * 0.76;
+  ctx.beginPath();
+  ctx.ellipse(bounds.cx, bounds.cy, ringRadius, ringRadius, 0, 0, Math.PI * 2);
+  ctx.strokeStyle = getCordCss();
+  ctx.lineWidth = designState.knotStyle === "无绳结" ? 2 : 7;
+  ctx.setLineDash(designState.knotStyle === "无绳结" ? [6, 8] : []);
+  ctx.globalAlpha = designState.knotStyle === "无绳结" ? 0.32 : 0.72;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if (designState.knotStyle !== "无绳结") {
+    const knotPositions = [
+      [bounds.cx + ringRadius * 0.86, bounds.cy - ringRadius * 0.18],
+      [bounds.cx - ringRadius * 0.86, bounds.cy - ringRadius * 0.18],
+    ];
+    knotPositions.forEach(([x, y]) => {
+      ctx.fillStyle = getCordCss();
+      ctx.beginPath();
+      roundRectPath(ctx, x - 18, y - 10, 36, 20, 8);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.42)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - 15, y - 4);
+      ctx.lineTo(x + 15, y + 4);
+      ctx.moveTo(x - 15, y + 4);
+      ctx.lineTo(x + 15, y - 4);
+      ctx.stroke();
+    });
+  }
+  if (designState.accessory !== "无配件") {
+    const x = bounds.cx;
+    const y = bounds.cy + ringRadius + 28;
+    ctx.fillStyle = "#d4a23a";
+    ctx.strokeStyle = "rgba(90,62,16,0.35)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.font = "bold 13px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(designState.accessory === "金福牌" ? "福" : "•", x, y);
+  }
   ctx.restore();
 }
 
@@ -2181,16 +2326,19 @@ function getDesignSummary() {
 }
 
 function estimatePrice() {
+  if (!physicsState.beads.length) return 0;
   const base = budgetBase[designState.budget] || 1480;
   const metalAdd = designState.metal === "暖金" || designState.metal === "玫瑰金" ? 160 : 0;
   const accentAdd = designState.accent === "刻字牌" ? 220 : designState.accent === "双圈叠戴" ? 460 : 0;
+  const accessoryAdd = { "无配件": 0, "金福牌": 88, "小金铃": 48, "银莲蓬": 68, "平安扣": 128 }[designState.accessory] || 0;
+  const knotAdd = designState.knotStyle === "无绳结" ? 0 : 58;
   const sizeAdd = designState.beadSize === "10mm" ? 260 : designState.beadSize === "6mm" ? -120 : 0;
   const packagingAdd = designState.packaging === "礼盒+手写卡" ? 88 : designState.packaging === "简装" ? -60 : 0;
   const timelineAdd = designState.timeline === "加急 3-5 天" ? 220 : designState.timeline === "婚礼批量" ? 520 : 0;
   const beadTotal = physicsState.beads.length
     ? physicsState.beads.reduce((sum, bead) => sum + bead.price, 0)
     : getBeadRecommendation().count * getSelectedBead().price;
-  return Math.max(285, Math.round(beadTotal + base * 0.18 + metalAdd + accentAdd + sizeAdd + packagingAdd + timelineAdd));
+  return Math.max(0, Math.round(beadTotal + base * 0.18 + metalAdd + accentAdd + accessoryAdd + knotAdd + sizeAdd + packagingAdd + timelineAdd));
 }
 
 function getPriceParts() {
@@ -2209,7 +2357,7 @@ function updateSummary() {
   if (!target) return;
   const parts = getPriceParts();
   const recommendation = getBeadRecommendation();
-  const beadCount = physicsState.beads.length || recommendation.count;
+  const beadCount = physicsState.beads.length;
   target.textContent = getDesignSummary();
   const orderPrice = document.getElementById("orderPrice");
   const beadCountText = document.getElementById("beadCountText");
