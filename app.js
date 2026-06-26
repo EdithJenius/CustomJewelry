@@ -735,7 +735,7 @@ const designState = {
 };
 
 const designerSamples = [
-  { slug: "spring-banquet-knot", label: "春日宴绳结", hint: "珍珠 + 墨绿编绳 + 金牌" },
+  { slug: "spring-banquet-knot", label: "春日宴绳结", hint: "珍珠 + 墨绿编绳" },
   { slug: "moon-ritual", label: "蓝白月光", hint: "月光石 + 白水晶" },
   { slug: "rose-compass", label: "粉晶礼物", hint: "粉水晶 + 石榴石" },
   { slug: "forest-signal", label: "森绿通勤", hint: "绿幽灵 + 银隔珠" },
@@ -823,6 +823,7 @@ const physicsState = {
   cutEffectUntil: 0,
   dragging: null,
   lastPointer: null,
+  modeBeforeDrag: null,
 };
 
 const threeState = {
@@ -1531,7 +1532,7 @@ function applyCaseToDesigner(slug) {
     beadSize: primary.size || "8mm",
     knotStyle: item.slug === "spring-banquet-knot" ? "双向平结" : designState.knotStyle,
     cordColor: item.slug === "spring-banquet-knot" ? "墨绿" : designState.cordColor,
-    accessory: item.slug === "spring-banquet-knot" ? "金福牌" : designState.accessory,
+    accessory: "无配件",
     viewMode: "3D 展示",
   });
   physicsState.beads = [];
@@ -1791,31 +1792,36 @@ function renderThreeBracelet(THREE, container, beadSet) {
   const group = new THREE.Group();
   scene.add(group);
   const count = Math.max(1, beadSet.length);
-  const ringRadius = 2.35;
   const beadRadius = Math.max(0.17, Math.min(0.32, getBeadMm() * 0.032));
+  const beadPositions = getThreeStringLayout(THREE, beadSet, beadRadius);
+  if (beadPositions.length > 1) {
+    const curve = new THREE.CatmullRomCurve3(beadPositions.map((item) => item.position), true, "centripetal", 0.55);
+    const cord = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, 180, getCordThicknessPx() * 0.0032, 10, true),
+      new THREE.MeshStandardMaterial({ color: getCordHex(), roughness: 0.78, metalness: 0.02 })
+    );
+    cord.renderOrder = 0;
+    group.add(cord);
+  }
   beadSet.forEach((bead, index) => {
-    const angle = (Math.PI * 2 * index) / count - Math.PI / 2;
+    const layout = beadPositions[index] || { angle: (Math.PI * 2 * index) / count - Math.PI / 2, position: new THREE.Vector3() };
     const material = createThreeBeadMaterial(THREE, bead);
     const geometry = new THREE.SphereGeometry(bead.category === "配饰" ? beadRadius * 0.82 : beadRadius, 48, 32);
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(Math.cos(angle) * ringRadius, Math.sin(angle) * 0.42, Math.sin(angle) * ringRadius * 0.72);
-    mesh.rotation.set(angle * 0.2, angle, 0);
+    mesh.position.copy(layout.position);
+    mesh.rotation.set(layout.angle * 0.2, layout.angle, 0);
+    mesh.renderOrder = 1;
     group.add(mesh);
   });
-  const cord = new THREE.Mesh(
-    new THREE.TorusGeometry(ringRadius, getCordThicknessPx() * 0.004, 12, 160),
-    new THREE.MeshStandardMaterial({ color: getCordHex(), roughness: 0.72, metalness: 0.03 })
-  );
-  cord.rotation.x = Math.PI / 2;
-  cord.scale.z = 0.72;
-  group.add(cord);
 
-  if (designState.accessory !== "无配件") {
+  if (designState.accessory !== "无配件" && beadPositions.length) {
+    const anchor = beadPositions.reduce((lowest, item) => (item.position.y < lowest.position.y ? item : lowest), beadPositions[0]);
     const charm = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.18, 0.18, 0.05, 40),
-      new THREE.MeshStandardMaterial({ color: 0xd6a33e, roughness: 0.24, metalness: 0.72 })
+      new THREE.CylinderGeometry(0.13, 0.13, 0.035, 40),
+      new THREE.MeshStandardMaterial({ color: 0xe2b655, roughness: 0.2, metalness: 0.82 })
     );
-    charm.position.set(0, -0.86, ringRadius * 0.68);
+    charm.position.copy(anchor?.position || new THREE.Vector3(0, -0.9, 1.55));
+    charm.position.y -= beadRadius * 1.3;
     charm.rotation.x = Math.PI / 2;
     group.add(charm);
   }
@@ -1862,6 +1868,26 @@ function renderThreeBracelet(THREE, container, beadSet) {
       if (node.material) node.material.dispose();
     });
   };
+}
+
+function getThreeStringLayout(THREE, beadSet, beadRadius) {
+  if (!beadSet.length) return [];
+  const radii = beadSet.map((bead) => (bead.category === "配饰" ? beadRadius * 0.82 : beadRadius));
+  const circumference = radii.reduce((sum, radius, index) => sum + (radius + radii[(index + 1) % radii.length]) * 1.96, 0);
+  const ringRadius = Math.max(1.38, Math.min(2.35, circumference / (Math.PI * 2)));
+  let cursor = -Math.PI / 2;
+  return beadSet.map((bead, index) => {
+    if (index > 0) cursor += ((radii[index - 1] + radii[index]) * 1.96) / ringRadius;
+    const angle = cursor;
+    return {
+      angle,
+      position: new THREE.Vector3(
+        Math.cos(angle) * ringRadius,
+        Math.sin(angle) * 0.52,
+        Math.sin(angle) * ringRadius * 0.72
+      ),
+    };
+  });
 }
 
 function createThreeBeadMaterial(THREE, bead) {
@@ -1997,6 +2023,13 @@ function updateStringTargets() {
     bead.tx = bounds.cx + Math.cos(angle) * snugRadius;
     bead.ty = bounds.cy + Math.sin(angle) * snugRadius;
   });
+}
+
+function reorderStringByCurrentAngles() {
+  const bounds = getPlateBounds();
+  physicsState.beads.sort((a, b) => Math.atan2(a.y - bounds.cy, a.x - bounds.cx) - Math.atan2(b.y - bounds.cy, b.x - bounds.cx));
+  const topIndex = physicsState.beads.reduce((best, bead, index, beads) => (bead.y < beads[best].y ? index : best), 0);
+  physicsState.beads = [...physicsState.beads.slice(topIndex), ...physicsState.beads.slice(0, topIndex)];
 }
 
 function getStringSegmentLength(a, b) {
@@ -2151,9 +2184,13 @@ function getCordCss() {
 function drawCordAndAccessory(ctx, bounds) {
   if (!physicsState.beads.length || (!physicsState.mode.startsWith("string") && physicsState.mode !== "cutting")) return;
   ctx.save();
-  const ringRadius = getSnugRingRadius(bounds);
+  const points = getCordPathPoints(bounds);
+  if (points.length < 2) {
+    ctx.restore();
+    return;
+  }
   ctx.beginPath();
-  ctx.ellipse(bounds.cx, bounds.cy, ringRadius, ringRadius, 0, 0, Math.PI * 2);
+  drawClosedCordPath(ctx, points);
   ctx.strokeStyle = getCordCss();
   ctx.lineWidth = designState.knotStyle === "无绳结" ? Math.max(2, getCordThicknessPx() - 2) : getCordThicknessPx() + 2;
   ctx.setLineDash(designState.knotStyle === "无绳结" ? [6, 8] : []);
@@ -2161,9 +2198,11 @@ function drawCordAndAccessory(ctx, bounds) {
   ctx.stroke();
   ctx.setLineDash([]);
   if (designState.knotStyle !== "无绳结") {
+    const leftKnot = getPointAtAngle(points, bounds, Math.PI);
+    const rightKnot = getPointAtAngle(points, bounds, 0);
     const knotPositions = [
-      [bounds.cx + ringRadius * 0.86, bounds.cy - ringRadius * 0.18],
-      [bounds.cx - ringRadius * 0.86, bounds.cy - ringRadius * 0.18],
+      [rightKnot.x, rightKnot.y],
+      [leftKnot.x, leftKnot.y],
     ];
     knotPositions.forEach(([x, y]) => {
       ctx.fillStyle = getCordCss();
@@ -2181,8 +2220,9 @@ function drawCordAndAccessory(ctx, bounds) {
     });
   }
   if (designState.accessory !== "无配件") {
-    const x = bounds.cx;
-    const y = bounds.cy + ringRadius + 28;
+    const anchor = points.reduce((lowest, point) => (point.y > lowest.y ? point : lowest), points[0]);
+    const x = anchor.x;
+    const y = anchor.y + 24;
     ctx.fillStyle = "#d4a23a";
     ctx.strokeStyle = "rgba(90,62,16,0.35)";
     ctx.lineWidth = 2;
@@ -2197,6 +2237,32 @@ function drawCordAndAccessory(ctx, bounds) {
     ctx.fillText(designState.accessory === "金福牌" ? "福" : "•", x, y);
   }
   ctx.restore();
+}
+
+function getCordPathPoints(bounds) {
+  if (physicsState.mode === "stringLocked" && !physicsState.dragging) {
+    return physicsState.beads.map((bead) => ({ x: bead.tx || bead.x, y: bead.ty || bead.y }));
+  }
+  return physicsState.beads.map((bead) => ({ x: bead.x, y: bead.y }));
+}
+
+function drawClosedCordPath(ctx, points) {
+  const last = points[points.length - 1];
+  const first = points[0];
+  ctx.moveTo((last.x + first.x) / 2, (last.y + first.y) / 2);
+  points.forEach((point, index) => {
+    const next = points[(index + 1) % points.length];
+    ctx.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2);
+  });
+}
+
+function getPointAtAngle(points, bounds, targetAngle) {
+  return points.reduce((best, point) => {
+    const angle = Math.atan2(point.y - bounds.cy, point.x - bounds.cx);
+    const bestDelta = Math.abs(Math.atan2(Math.sin(best.angle - targetAngle), Math.cos(best.angle - targetAngle)));
+    const delta = Math.abs(Math.atan2(Math.sin(angle - targetAngle), Math.cos(angle - targetAngle)));
+    return delta < bestDelta ? { point, angle } : best;
+  }, { point: points[0], angle: Math.atan2(points[0].y - bounds.cy, points[0].x - bounds.cx) }).point;
 }
 
 function drawCutEffect(ctx, bounds) {
@@ -2310,6 +2376,7 @@ function handleCanvasPointerDown(event) {
   if (!bead) return;
   physicsState.dragging = bead;
   physicsState.lastPointer = point;
+  physicsState.modeBeforeDrag = physicsState.mode;
   bead.vx = 0;
   bead.vy = 0;
   physicsState.canvas.setPointerCapture(event.pointerId);
@@ -2328,9 +2395,22 @@ function handleCanvasPointerMove(event) {
 }
 
 function handleCanvasPointerUp() {
+  const wasString = physicsState.modeBeforeDrag?.startsWith("string") || physicsState.mode?.startsWith("string");
   physicsState.dragging = null;
   physicsState.lastPointer = null;
-  if (physicsState.mode === "string") updateStringTargets();
+  physicsState.modeBeforeDrag = null;
+  if (wasString) {
+    reorderStringByCurrentAngles();
+    physicsState.mode = "stringLocked";
+    updateStringTargets();
+    physicsState.beads.forEach((bead) => {
+      bead.x = bead.tx;
+      bead.y = bead.ty;
+      bead.vx = 0;
+      bead.vy = 0;
+    });
+    syncThreePreview();
+  }
 }
 
 function getCanvasPoint(event) {
