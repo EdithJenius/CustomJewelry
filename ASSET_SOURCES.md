@@ -12,6 +12,7 @@ The gallery currently uses Pexels reference images as licensed placeholders for 
 | `assets/gallery/sun-archive.jpg` | Sun Archive | https://www.pexels.com/photo/11215784/ |
 | `assets/gallery/quiet-tide.jpg` | Quiet Tide | https://www.pexels.com/photo/12331832/ |
 | `assets/gallery/ember-line.jpg` | Ember Line | https://www.pexels.com/photo/10552039/ |
+| `assets/gallery-real/woven-knot-green.jpg` | 春日宴 / green woven knot bracelet direction | User supplied reference image in chat, 2026-06-26 |
 
 ## Platform collection workflow
 
