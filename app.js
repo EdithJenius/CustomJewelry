@@ -719,8 +719,10 @@ const designState = {
   budget: "1200-1800",
   accent: "小吊牌",
   accessory: "无配件",
+  cordMaterial: "玉线",
   knotStyle: "无绳结",
   cordColor: "墨绿",
+  cordThickness: "0.8mm",
   beadSize: "8mm",
   beadShape: "圆珠",
   fit: "舒适",
@@ -818,6 +820,7 @@ const physicsState = {
   beads: [],
   animationId: null,
   mode: "loose",
+  cutEffectUntil: 0,
   dragging: null,
   lastPointer: null,
 };
@@ -1064,8 +1067,10 @@ function renderDesigner() {
           </div>
           <label class="field compact-field"><span>设置净手围（cm）</span><input id="wristInput" type="number" min="12" max="22" step="0.1" value="${designState.wristCm}" /></label>
           ${control("fit", "佩戴松紧", ["贴手", "舒适", "宽松"])}
+          ${control("cordMaterial", "串绳材质", ["弹力线", "玉线", "蜡线", "手编棉线", "钢丝线"])}
           ${control("knotStyle", "绳结结构", ["无绳结", "双向平结", "蛇结收尾", "金刚结调节"])}
           ${control("cordColor", "编绳颜色", ["墨绿", "春辰", "四绿", "碧滋", "无心"])}
+          ${control("cordThickness", "串绳粗细", ["0.6mm", "0.8mm", "1.0mm", "1.2mm"])}
           ${control("accessory", "成串后配件", ["无配件", "金福牌", "小金铃", "银莲蓬", "平安扣"])}
           <div class="designer-insights">
             <article>
@@ -1601,8 +1606,10 @@ function bindDesigner() {
         budget: "1200-1800",
         accent: "小吊牌",
         accessory: "无配件",
+        cordMaterial: "玉线",
         knotStyle: "无绳结",
         cordColor: "墨绿",
+        cordThickness: "0.8mm",
         beadSize: "8mm",
         beadShape: "圆珠",
         fit: "舒适",
@@ -1796,7 +1803,7 @@ function renderThreeBracelet(THREE, container, beadSet) {
     group.add(mesh);
   });
   const cord = new THREE.Mesh(
-    new THREE.TorusGeometry(ringRadius, 0.012, 12, 160),
+    new THREE.TorusGeometry(ringRadius, getCordThicknessPx() * 0.004, 12, 160),
     new THREE.MeshStandardMaterial({ color: getCordHex(), roughness: 0.72, metalness: 0.03 })
   );
   cord.rotation.x = Math.PI / 2;
@@ -1962,23 +1969,48 @@ function collectBeadsIntoString() {
 }
 
 function scatterBeadsFromString() {
-  physicsState.mode = "loose";
+  if (physicsState.mode.startsWith("string") && physicsState.beads.length) {
+    physicsState.cutEffectUntil = performance.now() + 520;
+  }
+  physicsState.mode = "cutting";
   physicsState.beads.forEach((bead, index) => {
     const angle = (Math.PI * 2 * index) / Math.max(1, physicsState.beads.length);
-    bead.vx += Math.cos(angle) * (3.5 + Math.random() * 2);
-    bead.vy += Math.sin(angle) * (3.5 + Math.random() * 2);
+    bead.vx = Math.cos(angle) * (5.5 + Math.random() * 2.8);
+    bead.vy = Math.sin(angle) * (5.5 + Math.random() * 2.8);
   });
+  setTimeout(() => {
+    if (physicsState.mode === "cutting") physicsState.mode = "loose";
+  }, 180);
 }
 
 function updateStringTargets() {
   const bounds = getPlateBounds();
-  const count = Math.max(1, physicsState.beads.length);
-  const ringRadius = bounds.radius * 0.76;
+  if (!physicsState.beads.length) return;
+  const snugRadius = getSnugRingRadius(bounds);
+  let cursor = -Math.PI / 2;
   physicsState.beads.forEach((bead, index) => {
-    const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
-    bead.tx = bounds.cx + Math.cos(angle) * ringRadius;
-    bead.ty = bounds.cy + Math.sin(angle) * ringRadius;
+    if (index > 0) {
+      const prev = physicsState.beads[index - 1];
+      cursor += getStringSegmentLength(prev, bead) / snugRadius;
+    }
+    const angle = cursor;
+    bead.tx = bounds.cx + Math.cos(angle) * snugRadius;
+    bead.ty = bounds.cy + Math.sin(angle) * snugRadius;
   });
+}
+
+function getStringSegmentLength(a, b) {
+  return (a.r + b.r) * 0.98;
+}
+
+function getSnugRingRadius(bounds) {
+  if (physicsState.beads.length < 2) return bounds.radius * 0.38;
+  const totalStringLength = physicsState.beads.reduce((sum, bead, index) => {
+    const next = physicsState.beads[(index + 1) % physicsState.beads.length];
+    return sum + getStringSegmentLength(bead, next);
+  }, 0);
+  const idealRadius = totalStringLength / (Math.PI * 2);
+  return Math.min(bounds.radius * 0.78, Math.max(bounds.radius * 0.38, idealRadius));
 }
 
 function tickPhysics() {
@@ -2071,6 +2103,7 @@ function drawPhysics() {
   ctx.clearRect(0, 0, rect.width, rect.height);
   drawPlate(ctx, bounds);
   drawCordAndAccessory(ctx, bounds);
+  drawCutEffect(ctx, bounds);
   physicsState.beads.forEach((bead) => drawRealisticBead(ctx, bead));
 }
 
@@ -2107,18 +2140,22 @@ function getCordHex() {
   }[designState.cordColor] || 0x202e2b;
 }
 
+function getCordThicknessPx() {
+  return { "0.6mm": 3, "0.8mm": 5, "1.0mm": 7, "1.2mm": 9 }[designState.cordThickness] || 5;
+}
+
 function getCordCss() {
   return `#${getCordHex().toString(16).padStart(6, "0")}`;
 }
 
 function drawCordAndAccessory(ctx, bounds) {
-  if (!physicsState.beads.length || !physicsState.mode.startsWith("string")) return;
+  if (!physicsState.beads.length || (!physicsState.mode.startsWith("string") && physicsState.mode !== "cutting")) return;
   ctx.save();
-  const ringRadius = bounds.radius * 0.76;
+  const ringRadius = getSnugRingRadius(bounds);
   ctx.beginPath();
   ctx.ellipse(bounds.cx, bounds.cy, ringRadius, ringRadius, 0, 0, Math.PI * 2);
   ctx.strokeStyle = getCordCss();
-  ctx.lineWidth = designState.knotStyle === "无绳结" ? 2 : 7;
+  ctx.lineWidth = designState.knotStyle === "无绳结" ? Math.max(2, getCordThicknessPx() - 2) : getCordThicknessPx() + 2;
   ctx.setLineDash(designState.knotStyle === "无绳结" ? [6, 8] : []);
   ctx.globalAlpha = designState.knotStyle === "无绳结" ? 0.32 : 0.72;
   ctx.stroke();
@@ -2159,6 +2196,39 @@ function drawCordAndAccessory(ctx, bounds) {
     ctx.textBaseline = "middle";
     ctx.fillText(designState.accessory === "金福牌" ? "福" : "•", x, y);
   }
+  ctx.restore();
+}
+
+function drawCutEffect(ctx, bounds) {
+  const now = performance.now();
+  if (now > physicsState.cutEffectUntil) return;
+  const progress = 1 - (physicsState.cutEffectUntil - now) / 520;
+  const ringRadius = getSnugRingRadius(bounds);
+  const x = bounds.cx + ringRadius * 0.78;
+  const y = bounds.cy - ringRadius * 0.48;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, 1 - progress * 0.85);
+  ctx.translate(x, y);
+  ctx.rotate(-0.55 + progress * 0.22);
+  ctx.strokeStyle = "rgba(37,34,31,0.78)";
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(-10, 7, 7, 0, Math.PI * 2);
+  ctx.arc(8, 8, 7, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, 2);
+  ctx.lineTo(34, -13);
+  ctx.lineTo(4, 5);
+  ctx.lineTo(35, 19);
+  ctx.stroke();
+  ctx.strokeStyle = "#d14b42";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(-22, -9);
+  ctx.lineTo(22, 18);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -2322,7 +2392,7 @@ function drawBracelet() {
 
 function getDesignSummary() {
   const recommendation = getBeadRecommendation();
-  return `${designState.purpose} / 主石 ${designState.selectedStone} / 净手围 ${designState.wristCm}cm / 建议 ${recommendation.size} ${recommendation.count}颗 / 当前 ${physicsState.beads.length}颗 / ${designState.fit}佩戴 / ${designState.palette} / ${designState.beadShape} / ${designState.panStyle} / ${designState.metal} / ${designState.accent} / ${designState.packaging} / ${designState.timeline} / 预算 ${designState.budget} / 预估 ¥${estimatePrice().toLocaleString("zh-CN")}`;
+  return `${designState.purpose} / 主石 ${designState.selectedStone} / 净手围 ${designState.wristCm}cm / 建议 ${recommendation.size} ${recommendation.count}颗 / 当前 ${physicsState.beads.length}颗 / ${designState.fit}佩戴 / ${designState.palette} / ${designState.beadShape} / ${designState.cordMaterial}${designState.cordThickness} / ${designState.cordColor} / ${designState.knotStyle} / ${designState.accessory} / ${designState.panStyle} / ${designState.metal} / ${designState.accent} / ${designState.packaging} / ${designState.timeline} / 预算 ${designState.budget} / 预估 ¥${estimatePrice().toLocaleString("zh-CN")}`;
 }
 
 function estimatePrice() {
@@ -2332,13 +2402,15 @@ function estimatePrice() {
   const accentAdd = designState.accent === "刻字牌" ? 220 : designState.accent === "双圈叠戴" ? 460 : 0;
   const accessoryAdd = { "无配件": 0, "金福牌": 88, "小金铃": 48, "银莲蓬": 68, "平安扣": 128 }[designState.accessory] || 0;
   const knotAdd = designState.knotStyle === "无绳结" ? 0 : 58;
+  const cordMaterialAdd = { "弹力线": 18, "玉线": 28, "蜡线": 36, "手编棉线": 32, "钢丝线": 45 }[designState.cordMaterial] || 28;
+  const cordThicknessAdd = { "0.6mm": 0, "0.8mm": 8, "1.0mm": 16, "1.2mm": 22 }[designState.cordThickness] || 8;
   const sizeAdd = designState.beadSize === "10mm" ? 260 : designState.beadSize === "6mm" ? -120 : 0;
   const packagingAdd = designState.packaging === "礼盒+手写卡" ? 88 : designState.packaging === "简装" ? -60 : 0;
   const timelineAdd = designState.timeline === "加急 3-5 天" ? 220 : designState.timeline === "婚礼批量" ? 520 : 0;
   const beadTotal = physicsState.beads.length
     ? physicsState.beads.reduce((sum, bead) => sum + bead.price, 0)
     : getBeadRecommendation().count * getSelectedBead().price;
-  return Math.max(0, Math.round(beadTotal + base * 0.18 + metalAdd + accentAdd + accessoryAdd + knotAdd + sizeAdd + packagingAdd + timelineAdd));
+  return Math.max(0, Math.round(beadTotal + base * 0.18 + metalAdd + accentAdd + accessoryAdd + knotAdd + cordMaterialAdd + cordThicknessAdd + sizeAdd + packagingAdd + timelineAdd));
 }
 
 function getPriceParts() {
